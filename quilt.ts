@@ -325,8 +325,17 @@ function renderLibrary(): void {
                 const dragImage = item.cloneNode(true) as HTMLElement;
                 dragImage.style.position = "absolute";
                 dragImage.style.top = "-1000px";
+                dragImage.style.left = "0";
                 dragImage.style.width = item.offsetWidth + "px";
                 dragImage.style.height = item.offsetHeight + "px";
+
+                // Copy all relevant styles
+                dragImage.style.backgroundImage = item.style.backgroundImage;
+                dragImage.style.backgroundColor = item.style.backgroundColor;
+                dragImage.style.backgroundRepeat = item.style.backgroundRepeat;
+                dragImage.style.backgroundSize = "100% 100%";
+                dragImage.style.opacity = "1";
+
                 document.body.appendChild(dragImage);
 
                 e.dataTransfer.setDragImage(
@@ -746,9 +755,18 @@ function renderQuilt(): void {
                 const dragImage = square.cloneNode(true) as HTMLElement;
                 dragImage.style.position = "absolute";
                 dragImage.style.top = "-1000px"; // Position off-screen
+                dragImage.style.left = "0";
                 dragImage.style.width = square.offsetWidth + "px";
                 dragImage.style.height = square.offsetHeight + "px";
+
+                // Copy all relevant styles including background and transform
+                dragImage.style.backgroundImage = square.style.backgroundImage;
+                dragImage.style.backgroundColor = square.style.backgroundColor;
+                dragImage.style.backgroundRepeat = square.style.backgroundRepeat;
+                dragImage.style.backgroundSize = "100% 100%";
                 dragImage.style.transform = square.style.transform; // Preserve rotation
+                dragImage.style.opacity = "1";
+
                 document.body.appendChild(dragImage);
 
                 // Set as drag image
@@ -758,7 +776,7 @@ function renderQuilt(): void {
                     square.offsetHeight / 2
                 );
 
-                // Clean up after a short delay
+                // Clean up after drag starts
                 setTimeout(() => dragImage.remove(), 0);
             }
         });
