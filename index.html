@@ -114,13 +114,6 @@
             }
         }
 
-        .info {
-            text-align: center;
-            margin-top: 15px;
-            color: #666;
-            font-size: 14px;
-        }
-
         .pattern-designer {
             background: white;
             padding: 20px;
@@ -218,8 +211,6 @@
     </style>
 </head>
 <body>
-    <h1 style="margin-bottom: 20px; color: #333;">Quilt Designer</h1>
-
     <div class="pattern-designer">
         <h3>Pattern Designer</h3>
         <div class="designer-controls">
@@ -252,7 +243,6 @@
 
     <div class="quilt-container">
         <div class="quilt" id="quilt"></div>
-        <div class="info" id="info"></div>
     </div>
 
     <script>
@@ -462,16 +452,6 @@
                 rows = 6;
                 cols = 8;
             }
-
-            updateInfo();
-        }
-
-        // Update info display
-        function updateInfo() {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            const orientation = isPortrait ? 'Portrait' : 'Landscape';
-            document.getElementById('info').textContent =
-                `${orientation} Mode: ${cols} × ${rows} squares (${cols * rows} total)`;
         }
 
         // Render the quilt
