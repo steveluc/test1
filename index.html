@@ -452,6 +452,69 @@
                     draggedLibraryPattern = null;
                 });
 
+                // Touch events for mobile
+                item.addEventListener('touchstart', (e) => {
+                    draggedLibraryPattern = index;
+                    draggedIndex = null;
+                    item.classList.add('dragging');
+                    e.stopPropagation();
+                });
+
+                item.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                    // Remove drag-over from all squares
+                    document.querySelectorAll('.quilt-square.drag-over').forEach(sq => {
+                        sq.classList.remove('drag-over');
+                    });
+
+                    // Add drag-over to current square
+                    if (elementBelow && elementBelow.classList.contains('quilt-square')) {
+                        elementBelow.classList.add('drag-over');
+                    }
+                });
+
+                item.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    item.classList.remove('dragging');
+
+                    const touch = e.changedTouches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                    // Remove drag-over from all squares
+                    document.querySelectorAll('.quilt-square.drag-over').forEach(sq => {
+                        sq.classList.remove('drag-over');
+                    });
+
+                    if (elementBelow && elementBelow.classList.contains('quilt-square')) {
+                        const quilt = document.getElementById('quilt');
+                        const targetSquareIndex = Array.from(quilt.children).indexOf(elementBelow);
+                        const isPortrait = window.innerHeight > window.innerWidth;
+
+                        if (targetSquareIndex !== -1) {
+                            const targetPatternIndex = isPortrait ? targetSquareIndex : landscapeToPortrait(targetSquareIndex);
+
+                            // Copy pattern from library
+                            patterns[targetPatternIndex] = JSON.parse(JSON.stringify(library[index]));
+
+                            // Update visual
+                            const newPattern = patterns[targetPatternIndex];
+                            const newStyle = getPatternStyle(newPattern);
+                            if (newPattern.type === 'solid') {
+                                elementBelow.style.backgroundColor = newStyle;
+                                elementBelow.style.backgroundImage = 'none';
+                            } else {
+                                elementBelow.style.backgroundImage = newStyle;
+                                elementBelow.style.backgroundColor = 'transparent';
+                            }
+                        }
+                    }
+
+                    draggedLibraryPattern = null;
+                });
+
                 // Delete button
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
@@ -608,6 +671,73 @@
                             square.style.backgroundColor = 'transparent';
                         }
                     }
+                });
+
+                // Touch support for mobile
+                square.addEventListener('touchstart', (e) => {
+                    draggedIndex = i;
+                    square.classList.add('dragging');
+                    e.preventDefault();
+                });
+
+                square.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                    // Remove drag-over from all squares
+                    document.querySelectorAll('.quilt-square.drag-over').forEach(sq => {
+                        sq.classList.remove('drag-over');
+                    });
+
+                    // Add drag-over to current square
+                    if (elementBelow && elementBelow.classList.contains('quilt-square')) {
+                        elementBelow.classList.add('drag-over');
+                    }
+                });
+
+                square.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    square.classList.remove('dragging');
+
+                    const touch = e.changedTouches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                    // Remove drag-over from all squares
+                    document.querySelectorAll('.quilt-square.drag-over').forEach(sq => {
+                        sq.classList.remove('drag-over');
+                    });
+
+                    if (elementBelow && elementBelow.classList.contains('quilt-square')) {
+                        const targetSquareIndex = Array.from(quilt.children).indexOf(elementBelow);
+
+                        if (draggedIndex !== null && targetSquareIndex !== -1 && draggedIndex !== targetSquareIndex) {
+                            const targetPatternIndex = isPortrait ? targetSquareIndex : landscapeToPortrait(targetSquareIndex);
+
+                            // Check if dropping from library
+                            if (draggedLibraryPattern !== null) {
+                                patterns[targetPatternIndex] = JSON.parse(JSON.stringify(library[draggedLibraryPattern]));
+                            } else {
+                                // Copy pattern from another quilt square
+                                const sourcePatternIndex = isPortrait ? draggedIndex : landscapeToPortrait(draggedIndex);
+                                patterns[targetPatternIndex] = JSON.parse(JSON.stringify(patterns[sourcePatternIndex]));
+                            }
+
+                            // Update visual
+                            const newPattern = patterns[targetPatternIndex];
+                            const newStyle = getPatternStyle(newPattern);
+                            if (newPattern.type === 'solid') {
+                                elementBelow.style.backgroundColor = newStyle;
+                                elementBelow.style.backgroundImage = 'none';
+                            } else {
+                                elementBelow.style.backgroundImage = newStyle;
+                                elementBelow.style.backgroundColor = 'transparent';
+                            }
+                        }
+                    }
+
+                    draggedIndex = null;
+                    draggedLibraryPattern = null;
                 });
 
                 quilt.appendChild(square);
