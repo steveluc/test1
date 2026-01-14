@@ -280,6 +280,9 @@
         </div>
 
         <button onclick="exportQuiltAsPNG()" style="width: 100%; margin-top: 10px;">Export as PNG</button>
+        <button onclick="saveQuilt()" style="width: 100%; margin-top: 5px;">Save Quilt</button>
+        <button onclick="document.getElementById('loadQuiltInput').click()" style="width: 100%; margin-top: 5px;">Load Quilt</button>
+        <input type="file" id="loadQuiltInput" accept=".json" style="display: none;" onchange="loadQuilt(this)">
     </div>
 
     <script>
@@ -774,6 +777,59 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             });
+        }
+
+        // Save quilt to JSON file
+        function saveQuilt() {
+            const quiltData = {
+                patterns: patterns,
+                library: library,
+                savedAt: new Date().toISOString()
+            };
+            
+            const jsonString = JSON.stringify(quiltData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quilt-design-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Load quilt from JSON file
+        function loadQuilt(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const quiltData = JSON.parse(e.target.result);
+                    
+                    // Restore patterns
+                    if (quiltData.patterns && quiltData.patterns.length === 48) {
+                        patterns = quiltData.patterns;
+                        renderQuilt();
+                    }
+                    
+                    // Restore library
+                    if (quiltData.library) {
+                        library = quiltData.library;
+                        renderLibrary();
+                    }
+                    
+                    alert('Quilt loaded successfully!');
+                } catch (error) {
+                    alert('Error loading quilt: ' + error.message);
+                }
+                
+                // Reset file input
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
 
         // Map landscape index to portrait index (rotate 90 degrees clockwise)
