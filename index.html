@@ -62,6 +62,15 @@
             cursor: pointer;
         }
 
+        select {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
         button {
             padding: 10px 20px;
             background: #667eea;
@@ -148,6 +157,15 @@
             <input type="color" id="colorPicker" value="#ff6b9d">
         </div>
 
+        <div class="control-group">
+            <label for="patternType">Pattern Type</label>
+            <select id="patternType">
+                <option value="solid">Solid</option>
+                <option value="horizontal">Horizontal Stripes</option>
+                <option value="vertical">Vertical Stripes</option>
+            </select>
+        </div>
+
         <button onclick="resizeQuilt()">Resize</button>
         <button onclick="randomizeColors()">Randomize Colors</button>
     </div>
@@ -161,7 +179,7 @@
         let squareSize = 50;
         let rows = 8;
         let cols = 6;
-        let colors = [];  // Always stored in portrait orientation (8x6)
+        let patterns = [];  // Always stored in portrait orientation (8x6)
         let draggedIndex = null;
 
         // Generate random pastel colors
@@ -172,11 +190,71 @@
             return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
         }
 
-        // Initialize color array (always 8x6 for portrait)
+        // Create a random pattern
+        function createRandomPattern() {
+            const types = ['solid', 'horizontal', 'vertical'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            if (type === 'solid') {
+                return { type: 'solid', colors: [getRandomColor()] };
+            } else {
+                // Generate 5 random colors for stripes
+                const stripeColors = [];
+                for (let i = 0; i < 5; i++) {
+                    stripeColors.push(getRandomColor());
+                }
+                return { type: type, colors: stripeColors };
+            }
+        }
+
+        // Create a pattern from user selection
+        function createPattern(type, baseColor) {
+            if (type === 'solid') {
+                return { type: 'solid', colors: [baseColor] };
+            } else {
+                // For stripes, generate 5 variations of the base color
+                const stripeColors = [];
+                for (let i = 0; i < 5; i++) {
+                    stripeColors.push(getRandomColor());
+                }
+                return { type: type, colors: stripeColors };
+            }
+        }
+
+        // Initialize pattern array (always 8x6 for portrait)
         function initializeColors() {
-            colors = [];
+            patterns = [];
             for (let i = 0; i < 48; i++) {  // 8x6 = 48
-                colors.push(getRandomColor());
+                patterns.push(createRandomPattern());
+            }
+        }
+
+        // Render a pattern as CSS background
+        function getPatternStyle(pattern) {
+            if (pattern.type === 'solid') {
+                return pattern.colors[0];
+            } else if (pattern.type === 'horizontal') {
+                // Create horizontal stripes
+                const stripeHeight = 100 / 5;  // 5 stripes
+                const gradientStops = [];
+                for (let i = 0; i < 5; i++) {
+                    const start = i * stripeHeight;
+                    const end = (i + 1) * stripeHeight;
+                    gradientStops.push(`${pattern.colors[i]} ${start}%`);
+                    gradientStops.push(`${pattern.colors[i]} ${end}%`);
+                }
+                return `linear-gradient(to bottom, ${gradientStops.join(', ')})`;
+            } else if (pattern.type === 'vertical') {
+                // Create vertical stripes
+                const stripeWidth = 100 / 5;  // 5 stripes
+                const gradientStops = [];
+                for (let i = 0; i < 5; i++) {
+                    const start = i * stripeWidth;
+                    const end = (i + 1) * stripeWidth;
+                    gradientStops.push(`${pattern.colors[i]} ${start}%`);
+                    gradientStops.push(`${pattern.colors[i]} ${end}%`);
+                }
+                return `linear-gradient(to right, ${gradientStops.join(', ')})`;
             }
         }
 
@@ -238,8 +316,8 @@
 
             const isPortrait = window.innerHeight > window.innerWidth;
 
-            // Ensure we have colors initialized
-            if (colors.length !== 48) {
+            // Ensure we have patterns initialized
+            if (patterns.length !== 48) {
                 initializeColors();
             }
 
@@ -247,9 +325,20 @@
                 const square = document.createElement('div');
                 square.className = 'quilt-square';
 
-                // Get the correct color index based on orientation
-                const colorIndex = isPortrait ? i : landscapeToPortrait(i);
-                square.style.backgroundColor = colors[colorIndex];
+                // Get the correct pattern index based on orientation
+                const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+                const pattern = patterns[patternIndex];
+                const patternStyle = getPatternStyle(pattern);
+
+                // Apply pattern style
+                if (pattern.type === 'solid') {
+                    square.style.backgroundColor = patternStyle;
+                    square.style.backgroundImage = 'none';
+                } else {
+                    square.style.backgroundImage = patternStyle;
+                    square.style.backgroundColor = 'transparent';
+                }
+
                 square.style.width = `${squareSize}px`;
                 square.style.height = `${squareSize}px`;
                 square.draggable = true;
@@ -277,28 +366,50 @@
                     square.classList.remove('drag-over');
                 });
 
-                // Drop - copy color from source to target
+                // Drop - copy pattern from source to target
                 square.addEventListener('drop', (e) => {
                     e.preventDefault();
                     square.classList.remove('drag-over');
 
                     if (draggedIndex !== null && draggedIndex !== i) {
-                        // Map display indices to color array indices
-                        const sourceColorIndex = isPortrait ? draggedIndex : landscapeToPortrait(draggedIndex);
-                        const targetColorIndex = isPortrait ? i : landscapeToPortrait(i);
+                        // Map display indices to pattern array indices
+                        const sourcePatternIndex = isPortrait ? draggedIndex : landscapeToPortrait(draggedIndex);
+                        const targetPatternIndex = isPortrait ? i : landscapeToPortrait(i);
 
-                        // Copy the dragged square's color to this square
-                        colors[targetColorIndex] = colors[sourceColorIndex];
-                        square.style.backgroundColor = colors[targetColorIndex];
+                        // Copy the dragged square's pattern to this square
+                        patterns[targetPatternIndex] = JSON.parse(JSON.stringify(patterns[sourcePatternIndex]));
+
+                        // Update visual
+                        const newPattern = patterns[targetPatternIndex];
+                        const newStyle = getPatternStyle(newPattern);
+                        if (newPattern.type === 'solid') {
+                            square.style.backgroundColor = newStyle;
+                            square.style.backgroundImage = 'none';
+                        } else {
+                            square.style.backgroundImage = newStyle;
+                            square.style.backgroundColor = 'transparent';
+                        }
                     }
                 });
 
-                // Allow clicking to change individual square color
+                // Allow clicking to change individual square pattern
                 square.addEventListener('click', () => {
                     const customColor = document.getElementById('colorPicker').value;
-                    const colorIndex = isPortrait ? i : landscapeToPortrait(i);
-                    colors[colorIndex] = customColor;
-                    square.style.backgroundColor = colors[colorIndex];
+                    const patternType = document.getElementById('patternType').value;
+                    const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+
+                    patterns[patternIndex] = createPattern(patternType, customColor);
+
+                    // Update visual
+                    const newPattern = patterns[patternIndex];
+                    const newStyle = getPatternStyle(newPattern);
+                    if (newPattern.type === 'solid') {
+                        square.style.backgroundColor = newStyle;
+                        square.style.backgroundImage = 'none';
+                    } else {
+                        square.style.backgroundImage = newStyle;
+                        square.style.backgroundColor = 'transparent';
+                    }
                 });
 
                 quilt.appendChild(square);
