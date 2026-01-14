@@ -37,6 +37,13 @@ function createDragGhost(sourceElement: HTMLElement, touch: Touch): void {
     dragGhost.style.height = sourceElement.offsetHeight + "px";
     dragGhost.style.left = touch.clientX + "px";
     dragGhost.style.top = touch.clientY + "px";
+
+    // Preserve the rotation from the source element
+    const computedTransform = window.getComputedStyle(sourceElement).transform;
+    if (computedTransform && computedTransform !== "none") {
+        dragGhost.style.transform = computedTransform + " translate(-50%, -50%)";
+    }
+
     document.body.appendChild(dragGhost);
 }
 
