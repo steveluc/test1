@@ -438,17 +438,17 @@
                 }
                 return `linear-gradient(45deg, ${gradientStops.join(', ')})`;
             } else if (pattern.type === 'checkerboard') {
-                // Create checkerboard pattern with 4x4 grid using positioned backgrounds
-                const c1 = pattern.colors[0];
-                const c2 = pattern.colors[1];
-                const squares = [];
+                // Create checkerboard pattern with 4x4 grid using SVG
+                const c1 = pattern.colors[0].replace('#', '%23');
+                const c2 = pattern.colors[1].replace('#', '%23');
+                let rects = '';
                 for (let row = 0; row < 4; row++) {
                     for (let col = 0; col < 4; col++) {
                         const color = (row + col) % 2 === 0 ? c1 : c2;
-                        squares.push(`linear-gradient(${color}, ${color}) ${col * 25}% ${row * 25}% / 25% 25%`);
+                        rects += `<rect x='${col * 25}' y='${row * 25}' width='25' height='25' fill='${color}'/>`;
                     }
                 }
-                return squares.join(', ');
+                return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${rects}</svg>")`;
             } else if (pattern.type === 'quartersquare') {
                 // Create quarter-square triangles using SVG
                 const c0 = pattern.colors[0].replace('#', '%23');
