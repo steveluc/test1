@@ -764,7 +764,14 @@ function renderQuilt(): void {
                 dragImage.style.backgroundColor = square.style.backgroundColor;
                 dragImage.style.backgroundRepeat = square.style.backgroundRepeat;
                 dragImage.style.backgroundSize = "100% 100%";
-                dragImage.style.transform = square.style.transform; // Preserve rotation
+
+                // Get computed transform to ensure we capture the rotation
+                const computedStyle = window.getComputedStyle(square);
+                const transform = computedStyle.transform;
+                if (transform && transform !== "none") {
+                    dragImage.style.transform = transform;
+                }
+
                 dragImage.style.opacity = "1";
 
                 document.body.appendChild(dragImage);
