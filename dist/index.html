@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quilt Designer</title>
+  <script type="module" crossorigin src="/assets/index-new-D4E9Jwl1.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-new-DgzWx46x.css">
+</head>
+<body>
+    <div class="quilt-container">
+        <div class="quilt" id="quilt"></div>
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="pattern-designer">
+            <h3>Pattern Designer</h3>
+            <div class="designer-controls">
+                <div class="control-group">
+                    <label for="designerPatternType">Pattern Type</label>
+                    <select id="designerPatternType" onchange="updateColorPickers()">
+                        <option value="solid">Solid</option>
+                        <option value="horizontal">Horizontal Stripes</option>
+                        <option value="vertical">Vertical Stripes</option>
+                        <option value="diagonal">Diagonal Stripes</option>
+                        <option value="checkerboard">Checkerboard</option>
+                        <option value="quartersquare">Quarter-Square Triangles</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Colors</label>
+                    <div class="color-stripe-picker" id="colorStripePicker">
+                        <input type="color" value="#ff6b9d">
+                    </div>
+                </div>
+
+                <button onclick="addPatternToLibrary()">Add to Library</button>
+            </div>
+        </div>
+
+        <div class="pattern-library">
+            <h3>Pattern Library</h3>
+            <div class="library-items" id="libraryItems">
+                <p style="color: #999; font-style: italic;">No patterns yet. Design one above to get started!</p>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button onclick="exportQuiltAsPNG()">Export PNG</button>
+            <button onclick="saveQuilt()">Save</button>
+            <button onclick="document.getElementById('loadQuiltInput').click()">Load</button>
+        </div>
+        <input type="file" id="loadQuiltInput" accept=".json" style="display: none;" onchange="loadQuilt(this)">
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+# Quilt Designer
+
+An interactive web application for designing quilt patterns with drag-and-drop functionality, pattern library, and export capabilities.
+
+## Features
+
+- 🎨 **Pattern Designer** - Create solid colors, stripes (horizontal, vertical, diagonal), checkerboard, and quarter-square triangle patterns
+- 📚 **Pattern Library** - Save and reuse your custom patterns
+- 🔄 **Rotation** - Double-click/tap to rotate patterns 90 degrees
+- 🖱️ **Drag & Drop** - Intuitive pattern placement with mouse and touch support
+- 💾 **Save/Load** - Save designs as JSON and load them later
+- 📸 **Export PNG** - Export finished quilts as high-resolution images
+- 📱 **Responsive** - Works on desktop and mobile devices
+
+## Development
+
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm
+
+### Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+### Project Structure
+
+```
+test1/
+├── quilt.ts           # TypeScript source code
+├── styles.css         # Stylesheet
+├── index-new.html     # HTML template
+├── dist/              # Built files (after npm run build)
+│   ├── index.html
+│   └── assets/
+└── package.json       # Dependencies and scripts
+```
+
+## Deployment
+
+The `dist/` folder contains the production-ready files after running `npm run build`.
+
+### Deploy to GitHub Pages
+
+1. Build the project:
+   ```bash
+   npm run build
+   ```
+
+2. Commit and push the dist folder:
+   ```bash
+   git add dist
+   git commit -m "Build for deployment"
+   git push
+   ```
+
+3. Configure GitHub Pages to serve from the `main` branch
+
+## Technology Stack
+
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Fast build tool and dev server
+- **Canvas API** - High-quality PNG export
+- **CSS Grid** - Responsive quilt layout
+
+## Browser Support
+
+Works in all modern browsers that support:
+- ES2020
+- CSS Grid
+- Canvas API
+- Touch events
+
+## License
+
+MIT
