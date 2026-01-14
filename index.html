@@ -438,10 +438,24 @@
                 }
                 return `linear-gradient(45deg, ${gradientStops.join(', ')})`;
             } else if (pattern.type === 'checkerboard') {
-                // Create checkerboard pattern with 4x4 grid
-                return `repeating-conic-gradient(${pattern.colors[0]} 0% 25%, ${pattern.colors[1]} 25% 50%) 0 0 / 50% 50%`;
+                // Create checkerboard pattern with 4x4 grid using positioned backgrounds
+                const c1 = pattern.colors[0];
+                const c2 = pattern.colors[1];
+                const squares = [];
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 4; col++) {
+                        const color = (row + col) % 2 === 0 ? c1 : c2;
+                        squares.push(`linear-gradient(${color}, ${color}) ${col * 25}% ${row * 25}% / 25% 25%`);
+                    }
+                }
+                return squares.join(', ');
             } else if (pattern.type === 'quartersquare') {
-                return `conic-gradient(from 90deg, ${pattern.colors[0]} 0deg 90deg, ${pattern.colors[1]} 90deg 180deg, ${pattern.colors[2]} 180deg 270deg, ${pattern.colors[3]} 270deg 360deg)`;
+                // Create quarter-square triangles using SVG
+                const c0 = pattern.colors[0].replace('#', '%23');
+                const c1 = pattern.colors[1].replace('#', '%23');
+                const c2 = pattern.colors[2].replace('#', '%23');
+                const c3 = pattern.colors[3].replace('#', '%23');
+                return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 100,0 50,50' fill='${c0}'/><polygon points='100,0 100,100 50,50' fill='${c1}'/><polygon points='100,100 0,100 50,50' fill='${c2}'/><polygon points='0,100 0,0 50,50' fill='${c3}'/></svg>")`;
             }
         }
 
@@ -510,6 +524,7 @@
                 } else {
                     item.style.backgroundImage = patternStyle;
                     item.style.backgroundColor = 'transparent';
+                    item.style.backgroundRepeat = 'no-repeat';
                 }
 
                 // Drag events
@@ -582,6 +597,7 @@
                             } else {
                                 elementBelow.style.backgroundImage = newStyle;
                                 elementBelow.style.backgroundColor = 'transparent';
+                                elementBelow.style.backgroundRepeat = 'no-repeat';
                             }
                         }
                     }
@@ -795,6 +811,7 @@
                 } else {
                     square.style.backgroundImage = patternStyle;
                     square.style.backgroundColor = 'transparent';
+                    square.style.backgroundRepeat = 'no-repeat';
                 }
 
                 square.style.width = `${squareSize}px`;
@@ -845,6 +862,7 @@
                         } else {
                             square.style.backgroundImage = newStyle;
                             square.style.backgroundColor = 'transparent';
+                            square.style.backgroundRepeat = 'no-repeat';
                         }
                     } else if (draggedIndex !== null && draggedIndex !== i) {
                         // Copy pattern from another quilt square
@@ -862,6 +880,7 @@
                         } else {
                             square.style.backgroundImage = newStyle;
                             square.style.backgroundColor = 'transparent';
+                            square.style.backgroundRepeat = 'no-repeat';
                         }
                     }
                 });
@@ -928,6 +947,7 @@
                             } else {
                                 elementBelow.style.backgroundImage = newStyle;
                                 elementBelow.style.backgroundColor = 'transparent';
+                                elementBelow.style.backgroundRepeat = 'no-repeat';
                             }
                         }
                     }
