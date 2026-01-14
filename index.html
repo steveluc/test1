@@ -275,6 +275,8 @@
                 <p style="color: #999; font-style: italic;">No patterns yet. Design one above to get started!</p>
             </div>
         </div>
+
+        <button onclick="exportQuiltAsPNG()" style="width: 100%; margin-top: 10px;">Export as PNG</button>
     </div>
 
     <script>
@@ -566,6 +568,63 @@
 
                 item.appendChild(deleteBtn);
                 container.appendChild(item);
+            });
+        }
+
+        // Export quilt as PNG
+        function exportQuiltAsPNG() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const numCols = isPortrait ? 6 : 8;
+            const numRows = isPortrait ? 8 : 6;
+
+            // Create canvas with appropriate size (use fixed square size for export)
+            const exportSquareSize = 100; // Higher resolution for export
+            const canvas = document.createElement('canvas');
+            canvas.width = numCols * exportSquareSize;
+            canvas.height = numRows * exportSquareSize;
+            const ctx = canvas.getContext('2d');
+
+            // Draw each square
+            for (let i = 0; i < numRows * numCols; i++) {
+                const row = Math.floor(i / numCols);
+                const col = i % numCols;
+                const x = col * exportSquareSize;
+                const y = row * exportSquareSize;
+
+                // Get the correct pattern index based on orientation
+                const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+                const pattern = patterns[patternIndex];
+
+                if (pattern.type === 'solid') {
+                    ctx.fillStyle = pattern.colors[0];
+                    ctx.fillRect(x, y, exportSquareSize, exportSquareSize);
+                } else if (pattern.type === 'horizontal') {
+                    // Draw horizontal stripes
+                    const stripeHeight = exportSquareSize / 5;
+                    for (let j = 0; j < 5; j++) {
+                        ctx.fillStyle = pattern.colors[j];
+                        ctx.fillRect(x, y + j * stripeHeight, exportSquareSize, stripeHeight);
+                    }
+                } else if (pattern.type === 'vertical') {
+                    // Draw vertical stripes
+                    const stripeWidth = exportSquareSize / 5;
+                    for (let j = 0; j < 5; j++) {
+                        ctx.fillStyle = pattern.colors[j];
+                        ctx.fillRect(x + j * stripeWidth, y, stripeWidth, exportSquareSize);
+                    }
+                }
+            }
+
+            // Convert canvas to PNG and download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quilt-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             });
         }
 
