@@ -634,6 +634,7 @@
                                 elementBelow.style.backgroundColor = 'transparent';
                                 elementBelow.style.backgroundRepeat = 'no-repeat';
                             }
+                            elementBelow.style.transform = `rotate(${newPattern.rotation || 0}deg)`;
                         }
                     }
 
@@ -979,6 +980,7 @@
                             square.style.backgroundColor = 'transparent';
                             square.style.backgroundRepeat = 'no-repeat';
                         }
+                        square.style.transform = `rotate(${newPattern.rotation || 0}deg)`;
                     } else if (draggedIndex !== null && draggedIndex !== i) {
                         // Copy pattern from another quilt square
                         const sourcePatternIndex = isPortrait ? draggedIndex : landscapeToPortrait(draggedIndex);
@@ -997,6 +999,7 @@
                             square.style.backgroundColor = 'transparent';
                             square.style.backgroundRepeat = 'no-repeat';
                         }
+                        square.style.transform = `rotate(${newPattern.rotation || 0}deg)`;
                     }
                 });
 
@@ -1080,6 +1083,7 @@
                                 elementBelow.style.backgroundColor = 'transparent';
                                 elementBelow.style.backgroundRepeat = 'no-repeat';
                             }
+                            elementBelow.style.transform = `rotate(${newPattern.rotation || 0}deg)`;
                         }
                     }
 
