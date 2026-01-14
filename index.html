@@ -22,6 +22,28 @@
             gap: 10px;
         }
 
+        @media (orientation: landscape) {
+            body {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+            }
+        }
+
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        @media (orientation: landscape) {
+            .controls-wrapper {
+                width: 300px;
+                flex-shrink: 0;
+            }
+        }
+
         .control-group {
             display: flex;
             flex-direction: column;
@@ -211,38 +233,40 @@
     </style>
 </head>
 <body>
-    <div class="pattern-designer">
-        <h3>Pattern Designer</h3>
-        <div class="designer-controls">
-            <div class="control-group">
-                <label for="designerPatternType">Pattern Type</label>
-                <select id="designerPatternType" onchange="updateColorPickers()">
-                    <option value="solid">Solid</option>
-                    <option value="horizontal">Horizontal Stripes</option>
-                    <option value="vertical">Vertical Stripes</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>Colors</label>
-                <div class="color-stripe-picker" id="colorStripePicker">
-                    <input type="color" value="#ff6b9d">
-                </div>
-            </div>
-
-            <button onclick="addPatternToLibrary()">Add to Library</button>
-        </div>
-    </div>
-
-    <div class="pattern-library">
-        <h3>Pattern Library</h3>
-        <div class="library-items" id="libraryItems">
-            <p style="color: #999; font-style: italic;">No patterns yet. Design one above to get started!</p>
-        </div>
-    </div>
-
     <div class="quilt-container">
         <div class="quilt" id="quilt"></div>
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="pattern-designer">
+            <h3>Pattern Designer</h3>
+            <div class="designer-controls">
+                <div class="control-group">
+                    <label for="designerPatternType">Pattern Type</label>
+                    <select id="designerPatternType" onchange="updateColorPickers()">
+                        <option value="solid">Solid</option>
+                        <option value="horizontal">Horizontal Stripes</option>
+                        <option value="vertical">Vertical Stripes</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Colors</label>
+                    <div class="color-stripe-picker" id="colorStripePicker">
+                        <input type="color" value="#ff6b9d">
+                    </div>
+                </div>
+
+                <button onclick="addPatternToLibrary()">Add to Library</button>
+            </div>
+        </div>
+
+        <div class="pattern-library">
+            <h3>Pattern Library</h3>
+            <div class="library-items" id="libraryItems">
+                <p style="color: #999; font-style: italic;">No patterns yet. Design one above to get started!</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -260,10 +284,19 @@
             const numCols = isPortrait ? 6 : 8;
             const numRows = isPortrait ? 8 : 6;
 
-            // Estimate control height (pattern designer + library + padding)
-            const controlHeight = 200;
-            const availableHeight = window.innerHeight - controlHeight;
-            const availableWidth = window.innerWidth - 40; // Account for padding
+            let availableHeight, availableWidth;
+
+            if (isPortrait) {
+                // In portrait, controls are above quilt
+                const controlHeight = 200;
+                availableHeight = window.innerHeight - controlHeight;
+                availableWidth = window.innerWidth - 40;
+            } else {
+                // In landscape, controls are beside quilt
+                const controlWidth = 320; // 300px wrapper + gaps
+                availableHeight = window.innerHeight - 30;
+                availableWidth = window.innerWidth - controlWidth - 40;
+            }
 
             // Calculate size based on rows and columns
             const sizeByHeight = Math.floor((availableHeight - 20) / numRows);
