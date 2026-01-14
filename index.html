@@ -161,7 +161,7 @@
         let squareSize = 50;
         let rows = 8;
         let cols = 6;
-        let colors = [];
+        let colors = [];  // Always stored in portrait orientation (8x6)
         let draggedIndex = null;
 
         // Generate random pastel colors
@@ -172,12 +172,38 @@
             return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
         }
 
-        // Initialize color array
+        // Initialize color array (always 8x6 for portrait)
         function initializeColors() {
             colors = [];
-            for (let i = 0; i < rows * cols; i++) {
+            for (let i = 0; i < 48; i++) {  // 8x6 = 48
                 colors.push(getRandomColor());
             }
+        }
+
+        // Map landscape index to portrait index (rotate 90 degrees clockwise)
+        function landscapeToPortrait(landscapeIndex) {
+            // Landscape is 6 rows x 8 cols
+            const row = Math.floor(landscapeIndex / 8);
+            const col = landscapeIndex % 8;
+
+            // Map to portrait 8 rows x 6 cols (90 degree clockwise rotation)
+            // Landscape (r, c) -> Portrait (c, 5-r)
+            const portraitRow = col;
+            const portraitCol = 5 - row;
+            return portraitRow * 6 + portraitCol;
+        }
+
+        // Map portrait index to landscape index
+        function portraitToLandscape(portraitIndex) {
+            // Portrait is 8 rows x 6 cols
+            const row = Math.floor(portraitIndex / 6);
+            const col = portraitIndex % 6;
+
+            // Map to landscape 6 rows x 8 cols (90 degree clockwise rotation)
+            // Portrait (r, c) -> Landscape (5-c, r)
+            const landscapeRow = 5 - col;
+            const landscapeCol = row;
+            return landscapeRow * 8 + landscapeCol;
         }
 
         // Check orientation and adjust grid
@@ -210,15 +236,20 @@
 
             updateOrientation();
 
-            // Ensure we have enough colors
-            if (colors.length !== rows * cols) {
+            const isPortrait = window.innerHeight > window.innerWidth;
+
+            // Ensure we have colors initialized
+            if (colors.length !== 48) {
                 initializeColors();
             }
 
             for (let i = 0; i < rows * cols; i++) {
                 const square = document.createElement('div');
                 square.className = 'quilt-square';
-                square.style.backgroundColor = colors[i];
+
+                // Get the correct color index based on orientation
+                const colorIndex = isPortrait ? i : landscapeToPortrait(i);
+                square.style.backgroundColor = colors[colorIndex];
                 square.style.width = `${squareSize}px`;
                 square.style.height = `${squareSize}px`;
                 square.draggable = true;
@@ -252,17 +283,22 @@
                     square.classList.remove('drag-over');
 
                     if (draggedIndex !== null && draggedIndex !== i) {
+                        // Map display indices to color array indices
+                        const sourceColorIndex = isPortrait ? draggedIndex : landscapeToPortrait(draggedIndex);
+                        const targetColorIndex = isPortrait ? i : landscapeToPortrait(i);
+
                         // Copy the dragged square's color to this square
-                        colors[i] = colors[draggedIndex];
-                        square.style.backgroundColor = colors[i];
+                        colors[targetColorIndex] = colors[sourceColorIndex];
+                        square.style.backgroundColor = colors[targetColorIndex];
                     }
                 });
 
                 // Allow clicking to change individual square color
                 square.addEventListener('click', () => {
                     const customColor = document.getElementById('colorPicker').value;
-                    colors[i] = customColor;
-                    square.style.backgroundColor = colors[i];
+                    const colorIndex = isPortrait ? i : landscapeToPortrait(i);
+                    colors[colorIndex] = customColor;
+                    square.style.backgroundColor = colors[colorIndex];
                 });
 
                 quilt.appendChild(square);
