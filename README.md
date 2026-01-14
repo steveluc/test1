@@ -50,23 +50,34 @@ test1/
 
 ## Deployment
 
-The `dist/` folder contains the production-ready files after running `npm run build`.
+This project is configured for automatic deployment to GitHub Pages using GitHub Actions.
 
-### Deploy to GitHub Pages
+### Automatic Deployment (Recommended)
 
-1. Build the project:
-   ```bash
-   npm run build
-   ```
+Every push to the `main` branch will automatically:
+1. Build the project with Vite
+2. Deploy to GitHub Pages
 
-2. Commit and push the dist folder:
-   ```bash
-   git add dist
-   git commit -m "Build for deployment"
-   git push
-   ```
+**First-time Setup:**
+1. Go to your repository Settings → Pages
+2. Under "Build and deployment", select "Source: GitHub Actions"
+3. Push any change to main branch to trigger deployment
 
-3. Configure GitHub Pages to serve from the `main` branch
+### Manual Deployment
+
+You can also deploy manually:
+
+```bash
+# Build the project
+npm run build
+
+# Commit and push
+git add dist
+git commit -m "Build for deployment"
+git push
+```
+
+The `dist/` folder contains all production-ready files.
 
 ## Technology Stack
 
