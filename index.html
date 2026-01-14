@@ -14,49 +14,50 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f0f0f0;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            gap: 10px;
         }
 
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 3px;
         }
 
         label {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 600;
             color: #333;
         }
 
         input[type="color"] {
-            width: 80px;
-            height: 40px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            width: 35px;
+            height: 35px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
             cursor: pointer;
         }
 
         select {
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 11px;
             cursor: pointer;
             background: white;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 6px 12px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 3px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s;
@@ -68,18 +69,18 @@
 
         .quilt-container {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 8px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             display: inline-block;
         }
 
         .quilt {
             display: grid;
-            gap: 2px;
+            gap: 1px;
             background: #333;
-            padding: 2px;
-            border-radius: 5px;
+            padding: 1px;
+            border-radius: 3px;
         }
 
         .quilt-square {
@@ -116,63 +117,62 @@
 
         .pattern-designer {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            max-width: 800px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
             width: 100%;
         }
 
         .pattern-designer h3 {
-            margin-bottom: 15px;
+            margin-bottom: 6px;
             color: #333;
+            font-size: 13px;
         }
 
         .designer-controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 8px;
             align-items: flex-end;
-            margin-bottom: 15px;
         }
 
         .color-stripe-picker {
             display: flex;
-            gap: 5px;
+            gap: 3px;
         }
 
         .color-stripe-picker input[type="color"] {
-            width: 50px;
-            height: 50px;
+            width: 35px;
+            height: 35px;
         }
 
         .pattern-library {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            max-width: 800px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
             width: 100%;
         }
 
         .pattern-library h3 {
-            margin-bottom: 15px;
+            margin-bottom: 6px;
             color: #333;
+            font-size: 13px;
         }
 
         .library-items {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 6px;
         }
 
         .library-item {
-            width: 60px;
-            height: 60px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
             cursor: grab;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
@@ -180,7 +180,7 @@
 
         .library-item:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
         .library-item.dragging {
@@ -190,19 +190,19 @@
 
         .library-item .delete-btn {
             position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 20px;
-            height: 20px;
+            top: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
             background: #e74c3c;
             color: white;
             border: none;
             border-radius: 50%;
-            font-size: 12px;
+            font-size: 10px;
             cursor: pointer;
             display: none;
             padding: 0;
-            line-height: 20px;
+            line-height: 16px;
         }
 
         .library-item:hover .delete-btn {
@@ -253,6 +253,25 @@
         let draggedIndex = null;
         let library = [];  // Pattern library
         let draggedLibraryPattern = null;
+
+        // Calculate optimal square size based on viewport
+        function calculateSquareSize() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const numCols = isPortrait ? 6 : 8;
+            const numRows = isPortrait ? 8 : 6;
+
+            // Estimate control height (pattern designer + library + padding)
+            const controlHeight = 200;
+            const availableHeight = window.innerHeight - controlHeight;
+            const availableWidth = window.innerWidth - 40; // Account for padding
+
+            // Calculate size based on rows and columns
+            const sizeByHeight = Math.floor((availableHeight - 20) / numRows);
+            const sizeByWidth = Math.floor((availableWidth - 20) / numCols);
+
+            // Use the smaller of the two to ensure it fits
+            return Math.max(30, Math.min(sizeByHeight, sizeByWidth, 100));
+        }
 
         // Generate random pastel colors
         function getRandomColor() {
@@ -460,6 +479,9 @@
             quilt.innerHTML = '';
 
             updateOrientation();
+
+            // Calculate optimal square size
+            squareSize = calculateSquareSize();
 
             const isPortrait = window.innerHeight > window.innerWidth;
 
