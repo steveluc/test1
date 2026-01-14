@@ -41,7 +41,8 @@ function createDragGhost(sourceElement: HTMLElement, touch: Touch): void {
     // Preserve the rotation from the source element
     const computedTransform = window.getComputedStyle(sourceElement).transform;
     if (computedTransform && computedTransform !== "none") {
-        dragGhost.style.transform = computedTransform + " translate(-50%, -50%)";
+        dragGhost.style.transform =
+            computedTransform + " translate(-50%, -50%)";
     }
 
     document.body.appendChild(dragGhost);
@@ -751,40 +752,125 @@ function renderQuilt(): void {
 
             // Set custom drag image to preserve rotation on desktop
             if (e.dataTransfer) {
-                // Clone the element to use as drag image
-                const dragImage = square.cloneNode(true) as HTMLElement;
-                dragImage.style.position = "absolute";
-                dragImage.style.top = "-1000px"; // Position off-screen
-                dragImage.style.left = "0";
-                dragImage.style.width = square.offsetWidth + "px";
-                dragImage.style.height = square.offsetHeight + "px";
+                // Use canvas to create a rotated drag image
+                const canvas = document.createElement("canvas");
+                const size = square.offsetWidth;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext("2d")!;
 
-                // Copy all relevant styles including background and transform
-                dragImage.style.backgroundImage = square.style.backgroundImage;
-                dragImage.style.backgroundColor = square.style.backgroundColor;
-                dragImage.style.backgroundRepeat = square.style.backgroundRepeat;
-                dragImage.style.backgroundSize = "100% 100%";
+                // Get the pattern and rotation
+                const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+                const pattern = patterns[patternIndex];
+                const rotation = pattern.rotation || 0;
 
-                // Get computed transform to ensure we capture the rotation
-                const computedStyle = window.getComputedStyle(square);
-                const transform = computedStyle.transform;
-                if (transform && transform !== "none") {
-                    dragImage.style.transform = transform;
+                // Apply rotation
+                ctx.save();
+                ctx.translate(size / 2, size / 2);
+                ctx.rotate((rotation * Math.PI) / 180);
+                ctx.translate(-size / 2, -size / 2);
+
+                // Draw the pattern
+                if (pattern.type === "solid") {
+                    ctx.fillStyle = pattern.colors[0];
+                    ctx.fillRect(0, 0, size, size);
+                } else if (
+                    pattern.type === "horizontal" ||
+                    pattern.type === "vertical" ||
+                    pattern.type === "diagonal"
+                ) {
+                    // Draw stripes
+                    const stripeSize = size / 5;
+                    for (let j = 0; j < 5; j++) {
+                        ctx.fillStyle = pattern.colors[j];
+                        if (pattern.type === "horizontal") {
+                            ctx.fillRect(0, j * stripeSize, size, stripeSize);
+                        } else if (pattern.type === "vertical") {
+                            ctx.fillRect(j * stripeSize, 0, stripeSize, size);
+                        } else if (pattern.type === "diagonal") {
+                            // For diagonal, create the stripes at 45 degrees
+                            ctx.save();
+                            ctx.translate(size / 2, size / 2);
+                            ctx.rotate((-45 * Math.PI) / 180);
+                            const diagonal = size * Math.sqrt(2);
+                            const diagStripeSize = diagonal / 5;
+                            ctx.fillRect(
+                                -diagonal / 2 + j * diagStripeSize,
+                                -diagonal / 2,
+                                diagStripeSize,
+                                diagonal
+                            );
+                            ctx.restore();
+                        }
+                    }
+                } else if (pattern.type === "checkerboard") {
+                    const checkSize = size / 4;
+                    for (let row = 0; row < 4; row++) {
+                        for (let col = 0; col < 4; col++) {
+                            ctx.fillStyle = pattern.colors[(row + col) % 2];
+                            ctx.fillRect(
+                                col * checkSize,
+                                row * checkSize,
+                                checkSize,
+                                checkSize
+                            );
+                        }
+                    }
+                } else if (pattern.type === "quartersquare") {
+                    const cx = size / 2;
+                    const cy = size / 2;
+
+                    // Top triangle
+                    ctx.fillStyle = pattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(size, 0);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Right triangle
+                    ctx.fillStyle = pattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(size, 0);
+                    ctx.lineTo(size, size);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Bottom triangle
+                    ctx.fillStyle = pattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(size, size);
+                    ctx.lineTo(0, size);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Left triangle
+                    ctx.fillStyle = pattern.colors[3];
+                    ctx.beginPath();
+                    ctx.moveTo(0, size);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
                 }
 
-                dragImage.style.opacity = "1";
+                ctx.restore();
 
-                document.body.appendChild(dragImage);
+                // Convert canvas to image for better browser compatibility
+                const img = new Image();
+                img.src = canvas.toDataURL();
+                img.style.position = "absolute";
+                img.style.top = "-9999px";
+                document.body.appendChild(img);
 
-                // Set as drag image
-                e.dataTransfer.setDragImage(
-                    dragImage,
-                    square.offsetWidth / 2,
-                    square.offsetHeight / 2
-                );
+                // Set image as drag image (more reliable than canvas)
+                e.dataTransfer.setDragImage(img, size / 2, size / 2);
 
-                // Clean up after drag starts
-                setTimeout(() => dragImage.remove(), 0);
+                // Clean up image after drag starts
+                setTimeout(() => img.remove(), 0);
             }
         });
 

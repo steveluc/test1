@@ -6,7 +6,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
-      input: './index-new.html',
+      input: './index.html',
       output: {
         // Rename index-new.html to index.html in output
         entryFileNames: 'assets/[name]-[hash].js',
