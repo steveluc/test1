@@ -662,8 +662,13 @@
                         ctx.fillRect(x + j * stripeWidth, y, stripeWidth, exportSquareSize);
                     }
                 } else if (pattern.type === 'diagonal') {
-                    // Draw diagonal stripes
+                    // Draw diagonal stripes with clipping
                     ctx.save();
+                    // Set clipping region to the square
+                    ctx.beginPath();
+                    ctx.rect(x, y, exportSquareSize, exportSquareSize);
+                    ctx.clip();
+                    // Rotate and draw stripes
                     ctx.translate(x + exportSquareSize / 2, y + exportSquareSize / 2);
                     ctx.rotate(45 * Math.PI / 180);
                     const diagonal = exportSquareSize * Math.sqrt(2);
