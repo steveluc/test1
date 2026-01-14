@@ -88,12 +88,22 @@
 
         .quilt-square {
             aspect-ratio: 1;
-            cursor: pointer;
-            transition: transform 0.1s;
+            cursor: grab;
+            transition: transform 0.1s, opacity 0.2s;
         }
 
         .quilt-square:hover {
             transform: scale(0.95);
+        }
+
+        .quilt-square.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .quilt-square.drag-over {
+            border: 3px solid #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
         }
 
         @media (orientation: portrait) {
@@ -139,6 +149,7 @@
         let rows = 8;
         let cols = 6;
         let colors = [];
+        let draggedIndex = null;
 
         // Generate random pastel colors
         function getRandomColor() {
@@ -197,6 +208,42 @@
                 square.style.backgroundColor = colors[i];
                 square.style.width = `${squareSize}px`;
                 square.style.height = `${squareSize}px`;
+                square.draggable = true;
+
+                // Drag start - remember which square is being dragged
+                square.addEventListener('dragstart', (e) => {
+                    draggedIndex = i;
+                    square.classList.add('dragging');
+                });
+
+                // Drag end - clean up
+                square.addEventListener('dragend', (e) => {
+                    square.classList.remove('dragging');
+                    draggedIndex = null;
+                });
+
+                // Drag over - allow dropping
+                square.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    square.classList.add('drag-over');
+                });
+
+                // Drag leave - remove visual feedback
+                square.addEventListener('dragleave', (e) => {
+                    square.classList.remove('drag-over');
+                });
+
+                // Drop - copy color from source to target
+                square.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    square.classList.remove('drag-over');
+
+                    if (draggedIndex !== null && draggedIndex !== i) {
+                        // Copy the dragged square's color to this square
+                        colors[i] = colors[draggedIndex];
+                        square.style.backgroundColor = colors[i];
+                    }
+                });
 
                 // Allow clicking to change individual square color
                 square.addEventListener('click', () => {
