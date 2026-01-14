@@ -319,6 +319,24 @@ function renderLibrary(): void {
         item.addEventListener("dragstart", (e) => {
             draggedLibraryPattern = index;
             item.classList.add("dragging");
+
+            // Set custom drag image for library items on desktop
+            if (e.dataTransfer) {
+                const dragImage = item.cloneNode(true) as HTMLElement;
+                dragImage.style.position = "absolute";
+                dragImage.style.top = "-1000px";
+                dragImage.style.width = item.offsetWidth + "px";
+                dragImage.style.height = item.offsetHeight + "px";
+                document.body.appendChild(dragImage);
+
+                e.dataTransfer.setDragImage(
+                    dragImage,
+                    item.offsetWidth / 2,
+                    item.offsetHeight / 2
+                );
+
+                setTimeout(() => dragImage.remove(), 0);
+            }
         });
 
         item.addEventListener("dragend", (e) => {
@@ -721,6 +739,28 @@ function renderQuilt(): void {
         square.addEventListener("dragstart", (e) => {
             draggedIndex = i;
             square.classList.add("dragging");
+
+            // Set custom drag image to preserve rotation on desktop
+            if (e.dataTransfer) {
+                // Clone the element to use as drag image
+                const dragImage = square.cloneNode(true) as HTMLElement;
+                dragImage.style.position = "absolute";
+                dragImage.style.top = "-1000px"; // Position off-screen
+                dragImage.style.width = square.offsetWidth + "px";
+                dragImage.style.height = square.offsetHeight + "px";
+                dragImage.style.transform = square.style.transform; // Preserve rotation
+                document.body.appendChild(dragImage);
+
+                // Set as drag image
+                e.dataTransfer.setDragImage(
+                    dragImage,
+                    square.offsetWidth / 2,
+                    square.offsetHeight / 2
+                );
+
+                // Clean up after a short delay
+                setTimeout(() => dragImage.remove(), 0);
+            }
         });
 
         // Drag end - clean up
