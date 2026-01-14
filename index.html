@@ -54,6 +54,14 @@
             width: 80px;
         }
 
+        input[type="color"] {
+            width: 80px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         button {
             padding: 10px 20px;
             background: #667eea;
@@ -133,6 +141,11 @@
         <div class="control-group">
             <label for="squareSize">Square Size (px)</label>
             <input type="number" id="squareSize" value="50" min="20" max="200" step="10">
+        </div>
+
+        <div class="control-group">
+            <label for="colorPicker">Custom Color</label>
+            <input type="color" id="colorPicker" value="#ff6b9d">
         </div>
 
         <button onclick="resizeQuilt()">Resize</button>
@@ -247,7 +260,8 @@
 
                 // Allow clicking to change individual square color
                 square.addEventListener('click', () => {
-                    colors[i] = getRandomColor();
+                    const customColor = document.getElementById('colorPicker').value;
+                    colors[i] = customColor;
                     square.style.backgroundColor = colors[i];
                 });
 
