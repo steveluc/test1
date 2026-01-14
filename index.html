@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quilt Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 80px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .quilt-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+
+        .quilt {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            border-radius: 5px;
+        }
+
+        .quilt-square {
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .quilt-square:hover {
+            transform: scale(0.95);
+        }
+
+        @media (orientation: portrait) {
+            .quilt {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (orientation: landscape) {
+            .quilt {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="margin-bottom: 20px; color: #333;">Quilt Designer</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="squareSize">Square Size (px)</label>
+            <input type="number" id="squareSize" value="50" min="20" max="200" step="10">
+        </div>
+
+        <button onclick="resizeQuilt()">Resize</button>
+        <button onclick="randomizeColors()">Randomize Colors</button>
+    </div>
+
+    <div class="quilt-container">
+        <div class="quilt" id="quilt"></div>
+        <div class="info" id="info"></div>
+    </div>
+
+    <script>
+        let squareSize = 50;
+        let rows = 8;
+        let cols = 6;
+        let colors = [];
+
+        // Generate random pastel colors
+        function getRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            const saturation = 60 + Math.floor(Math.random() * 30);
+            const lightness = 60 + Math.floor(Math.random() * 20);
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        // Initialize color array
+        function initializeColors() {
+            colors = [];
+            for (let i = 0; i < rows * cols; i++) {
+                colors.push(getRandomColor());
+            }
+        }
+
+        // Check orientation and adjust grid
+        function updateOrientation() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+
+            if (isPortrait) {
+                rows = 8;
+                cols = 6;
+            } else {
+                rows = 6;
+                cols = 8;
+            }
+
+            updateInfo();
+        }
+
+        // Update info display
+        function updateInfo() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const orientation = isPortrait ? 'Portrait' : 'Landscape';
+            document.getElementById('info').textContent =
+                `${orientation} Mode: ${cols} × ${rows} squares (${cols * rows} total)`;
+        }
+
+        // Render the quilt
+        function renderQuilt() {
+            const quilt = document.getElementById('quilt');
+            quilt.innerHTML = '';
+
+            updateOrientation();
+
+            // Ensure we have enough colors
+            if (colors.length !== rows * cols) {
+                initializeColors();
+            }
+
+            for (let i = 0; i < rows * cols; i++) {
+                const square = document.createElement('div');
+                square.className = 'quilt-square';
+                square.style.backgroundColor = colors[i];
+                square.style.width = `${squareSize}px`;
+                square.style.height = `${squareSize}px`;
+
+                // Allow clicking to change individual square color
+                square.addEventListener('click', () => {
+                    colors[i] = getRandomColor();
+                    square.style.backgroundColor = colors[i];
+                });
+
+                quilt.appendChild(square);
+            }
+        }
+
+        // Resize quilt
+        function resizeQuilt() {
+            const input = document.getElementById('squareSize');
+            squareSize = parseInt(input.value);
+            renderQuilt();
+        }
+
+        // Randomize all colors
+        function randomizeColors() {
+            initializeColors();
+            renderQuilt();
+        }
+
+        // Handle orientation changes
+        window.addEventListener('resize', renderQuilt);
+        window.addEventListener('orientationchange', renderQuilt);
+
+        // Initial render
+        initializeColors();
+        renderQuilt();
+    </script>
+</body>
+</html>
