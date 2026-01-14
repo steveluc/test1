@@ -255,6 +255,9 @@
                         <option value="solid">Solid</option>
                         <option value="horizontal">Horizontal Stripes</option>
                         <option value="vertical">Vertical Stripes</option>
+                        <option value="diagonal">Diagonal Stripes</option>
+                        <option value="checkerboard">Checkerboard</option>
+                        <option value="quartersquare">Quarter-Square Triangles</option>
                     </select>
                 </div>
 
@@ -354,18 +357,24 @@
 
         // Create a random pattern
         function createRandomPattern() {
-            const types = ['solid', 'horizontal', 'vertical'];
+            const types = ['solid', 'horizontal', 'vertical', 'diagonal', 'checkerboard', 'quartersquare'];
             const type = types[Math.floor(Math.random() * types.length)];
 
             if (type === 'solid') {
                 return { type: 'solid', colors: [getRandomColor()] };
-            } else {
+            } else if (type === 'horizontal' || type === 'vertical' || type === 'diagonal') {
                 // Generate 5 random colors for stripes
                 const stripeColors = [];
                 for (let i = 0; i < 5; i++) {
                     stripeColors.push(getRandomColor());
                 }
                 return { type: type, colors: stripeColors };
+            } else if (type === 'checkerboard') {
+                // Generate 2 colors for checkerboard
+                return { type: 'checkerboard', colors: [getRandomColor(), getRandomColor()] };
+            } else if (type === 'quartersquare') {
+                // Generate 4 colors for quarter-square triangles
+                return { type: 'quartersquare', colors: [getRandomColor(), getRandomColor(), getRandomColor(), getRandomColor()] };
             }
         }
 
@@ -417,6 +426,28 @@
                     gradientStops.push(`${pattern.colors[i]} ${end}%`);
                 }
                 return `linear-gradient(to right, ${gradientStops.join(', ')})`;
+            } else if (pattern.type === 'diagonal') {
+                // Create diagonal stripes (45 degrees)
+                const stripeWidth = 100 / 5;
+                const gradientStops = [];
+                for (let i = 0; i < 5; i++) {
+                    const start = i * stripeWidth;
+                    const end = (i + 1) * stripeWidth;
+                    gradientStops.push(`${pattern.colors[i]} ${start}%`);
+                    gradientStops.push(`${pattern.colors[i]} ${end}%`);
+                }
+                return `linear-gradient(45deg, ${gradientStops.join(', ')})`;
+            } else if (pattern.type === 'checkerboard') {
+                // Create checkerboard pattern with 4x4 grid
+                return `repeating-conic-gradient(${pattern.colors[0]} 0% 25%, ${pattern.colors[1]} 0% 50%) 0 0 / 50% 50%`;
+            } else if (pattern.type === 'quartersquare') {
+                // Create quarter-square triangles using multiple gradients
+                return `
+                    linear-gradient(135deg, ${pattern.colors[0]} 50%, transparent 50%),
+                    linear-gradient(45deg, ${pattern.colors[1]} 50%, transparent 50%),
+                    linear-gradient(-45deg, ${pattern.colors[2]} 50%, transparent 50%),
+                    linear-gradient(-135deg, ${pattern.colors[3]} 50%, transparent 50%)
+                `;
             }
         }
 
@@ -426,20 +457,28 @@
             const picker = document.getElementById('colorStripePicker');
             picker.innerHTML = '';
 
+            let numColors = 1;
+            let defaultColors = ['#ff6b9d'];
+
             if (type === 'solid') {
+                numColors = 1;
+                defaultColors = ['#ff6b9d'];
+            } else if (type === 'horizontal' || type === 'vertical' || type === 'diagonal') {
+                numColors = 5;
+                defaultColors = ['#ff6b9d', '#764ba2', '#667eea', '#f093fb', '#4facfe'];
+            } else if (type === 'checkerboard') {
+                numColors = 2;
+                defaultColors = ['#ff6b9d', '#667eea'];
+            } else if (type === 'quartersquare') {
+                numColors = 4;
+                defaultColors = ['#ff6b9d', '#764ba2', '#667eea', '#f093fb'];
+            }
+
+            for (let i = 0; i < numColors; i++) {
                 const input = document.createElement('input');
                 input.type = 'color';
-                input.value = '#ff6b9d';
+                input.value = defaultColors[i];
                 picker.appendChild(input);
-            } else {
-                // Create 5 color pickers for stripes
-                const colors = ['#ff6b9d', '#764ba2', '#667eea', '#f093fb', '#4facfe'];
-                for (let i = 0; i < 5; i++) {
-                    const input = document.createElement('input');
-                    input.type = 'color';
-                    input.value = colors[i];
-                    picker.appendChild(input);
-                }
             }
         }
 
@@ -612,6 +651,68 @@
                         ctx.fillStyle = pattern.colors[j];
                         ctx.fillRect(x + j * stripeWidth, y, stripeWidth, exportSquareSize);
                     }
+                } else if (pattern.type === 'diagonal') {
+                    // Draw diagonal stripes
+                    const stripeWidth = exportSquareSize / 5;
+                    ctx.save();
+                    ctx.translate(x + exportSquareSize / 2, y + exportSquareSize / 2);
+                    ctx.rotate(45 * Math.PI / 180);
+                    const diagonal = exportSquareSize * Math.sqrt(2);
+                    for (let j = 0; j < 5; j++) {
+                        ctx.fillStyle = pattern.colors[j];
+                        ctx.fillRect(-diagonal / 2 + j * stripeWidth, -diagonal / 2, stripeWidth, diagonal);
+                    }
+                    ctx.restore();
+                } else if (pattern.type === 'checkerboard') {
+                    // Draw checkerboard pattern (4x4 grid)
+                    const checkSize = exportSquareSize / 4;
+                    for (let row = 0; row < 4; row++) {
+                        for (let col = 0; col < 4; col++) {
+                            const colorIndex = (row + col) % 2;
+                            ctx.fillStyle = pattern.colors[colorIndex];
+                            ctx.fillRect(x + col * checkSize, y + row * checkSize, checkSize, checkSize);
+                        }
+                    }
+                } else if (pattern.type === 'quartersquare') {
+                    // Draw quarter-square triangles
+                    const cx = x + exportSquareSize / 2;
+                    const cy = y + exportSquareSize / 2;
+
+                    // Top-left triangle
+                    ctx.fillStyle = pattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + exportSquareSize, y);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Top-right triangle
+                    ctx.fillStyle = pattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(x + exportSquareSize, y);
+                    ctx.lineTo(x + exportSquareSize, y + exportSquareSize);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Bottom-right triangle
+                    ctx.fillStyle = pattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(x + exportSquareSize, y + exportSquareSize);
+                    ctx.lineTo(x, y + exportSquareSize);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Bottom-left triangle
+                    ctx.fillStyle = pattern.colors[3];
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + exportSquareSize);
+                    ctx.lineTo(x, y);
+                    ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
                 }
             }
 
