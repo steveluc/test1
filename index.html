@@ -663,11 +663,11 @@
                     }
                 } else if (pattern.type === 'diagonal') {
                     // Draw diagonal stripes
-                    const stripeWidth = exportSquareSize / 5;
                     ctx.save();
                     ctx.translate(x + exportSquareSize / 2, y + exportSquareSize / 2);
                     ctx.rotate(45 * Math.PI / 180);
                     const diagonal = exportSquareSize * Math.sqrt(2);
+                    const stripeWidth = diagonal / 5;
                     for (let j = 0; j < 5; j++) {
                         ctx.fillStyle = pattern.colors[j];
                         ctx.fillRect(-diagonal / 2 + j * stripeWidth, -diagonal / 2, stripeWidth, diagonal);
