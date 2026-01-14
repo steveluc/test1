@@ -230,6 +230,14 @@
         .library-item:hover .delete-btn {
             display: block;
         }
+
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.7;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -277,6 +285,34 @@
         let draggedIndex = null;
         let library = [];  // Pattern library
         let draggedLibraryPattern = null;
+        let dragGhost = null;  // Visual element that follows touch during drag
+
+        // Create drag ghost element
+        function createDragGhost(sourceElement, touch) {
+            dragGhost = sourceElement.cloneNode(true);
+            dragGhost.classList.add('drag-ghost');
+            dragGhost.style.width = sourceElement.offsetWidth + 'px';
+            dragGhost.style.height = sourceElement.offsetHeight + 'px';
+            dragGhost.style.left = touch.clientX + 'px';
+            dragGhost.style.top = touch.clientY + 'px';
+            document.body.appendChild(dragGhost);
+        }
+
+        // Update drag ghost position
+        function updateDragGhost(touch) {
+            if (dragGhost) {
+                dragGhost.style.left = touch.clientX + 'px';
+                dragGhost.style.top = touch.clientY + 'px';
+            }
+        }
+
+        // Remove drag ghost
+        function removeDragGhost() {
+            if (dragGhost) {
+                dragGhost.remove();
+                dragGhost = null;
+            }
+        }
 
         // Calculate optimal square size based on viewport
         function calculateSquareSize() {
@@ -457,12 +493,14 @@
                     draggedLibraryPattern = index;
                     draggedIndex = null;
                     item.classList.add('dragging');
+                    createDragGhost(item, e.touches[0]);
                     e.stopPropagation();
                 });
 
                 item.addEventListener('touchmove', (e) => {
                     e.preventDefault();
                     const touch = e.touches[0];
+                    updateDragGhost(touch);
                     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
 
                     // Remove drag-over from all squares
@@ -479,6 +517,7 @@
                 item.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     item.classList.remove('dragging');
+                    removeDragGhost();
 
                     const touch = e.changedTouches[0];
                     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -677,12 +716,14 @@
                 square.addEventListener('touchstart', (e) => {
                     draggedIndex = i;
                     square.classList.add('dragging');
+                    createDragGhost(square, e.touches[0]);
                     e.preventDefault();
                 });
 
                 square.addEventListener('touchmove', (e) => {
                     e.preventDefault();
                     const touch = e.touches[0];
+                    updateDragGhost(touch);
                     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
 
                     // Remove drag-over from all squares
@@ -699,6 +740,7 @@
                 square.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     square.classList.remove('dragging');
+                    removeDragGhost();
 
                     const touch = e.changedTouches[0];
                     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
