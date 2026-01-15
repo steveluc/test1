@@ -12,13 +12,8 @@ interface Pattern {
 }
 
 interface GridConfig {
-    mode: "simple" | "custom";
-    customRows?: number; // Number of rows in custom mode
-    customCols?: number; // Number of columns in custom mode
-    // Deprecated fields for backwards compatibility
-    gridUnits?: number;
-    squareSize?: number;
-    squaresPerSide?: number;
+    rows: number;
+    cols: number;
 }
 
 interface QuiltData {
@@ -40,9 +35,8 @@ let dragGhost: HTMLElement | null = null;
 let lastTapTime: number = 0;
 let lastTapIndex: number = -1;
 let gridConfig: GridConfig = {
-    mode: "simple",
-    customRows: 4,
-    customCols: 4,
+    rows: 6,
+    cols: 8,
 };
 
 // Create drag ghost element
@@ -82,14 +76,10 @@ function removeDragGhost(): void {
 
 // Rotate a pattern 90 degrees clockwise
 function rotatePattern(index: number): void {
-    const isPortrait = window.innerHeight > window.innerWidth;
-    const patternIndex = isPortrait ? index : landscapeToPortrait(index);
-
-    if (!patterns[patternIndex].rotation) {
-        patterns[patternIndex].rotation = 0;
+    if (!patterns[index].rotation) {
+        patterns[index].rotation = 0;
     }
-    patterns[patternIndex].rotation =
-        (patterns[patternIndex].rotation! + 90) % 360;
+    patterns[index].rotation = (patterns[index].rotation! + 90) % 360;
 
     // Re-render the quilt to apply rotation
     renderQuilt();
@@ -404,20 +394,15 @@ function renderLibrary(): void {
                 const targetSquareIndex = Array.from(quilt.children).indexOf(
                     elementBelow
                 );
-                const isPortrait = window.innerHeight > window.innerWidth;
 
                 if (targetSquareIndex !== -1) {
-                    const targetPatternIndex = isPortrait
-                        ? targetSquareIndex
-                        : landscapeToPortrait(targetSquareIndex);
-
                     // Copy pattern from library
-                    patterns[targetPatternIndex] = JSON.parse(
+                    patterns[targetSquareIndex] = JSON.parse(
                         JSON.stringify(library[index])
                     );
 
                     // Update visual
-                    const newPattern = patterns[targetPatternIndex];
+                    const newPattern = patterns[targetSquareIndex];
                     const newStyle = getPatternStyle(newPattern);
                     const target = elementBelow as HTMLElement;
                     if (newPattern.type === "solid") {
@@ -472,9 +457,9 @@ function exportQuiltAsPNG(): void {
         const x = col * exportSquareSize;
         const y = row * exportSquareSize;
 
-        // Get the correct pattern index (use landscape conversion only in simple mode when in landscape)
+        // Get the correct pattern index (use landscape conversion when in landscape)
         const currentIsPortrait = window.innerHeight > window.innerWidth;
-        const patternIndex = gridConfig.mode === "simple" && !currentIsPortrait ? landscapeToPortrait(i) : i;
+        const patternIndex = !currentIsPortrait ? landscapeToPortrait(i) : i;
         const pattern = patterns[patternIndex];
         const rotation = pattern.rotation || 0;
 
@@ -643,7 +628,7 @@ function loadQuilt(input: HTMLInputElement): void {
             ) as QuiltData;
 
             // Restore patterns
-            if (quiltData.patterns && quiltData.patterns.length === 48) {
+            if (quiltData.patterns) {
                 patterns = quiltData.patterns;
                 renderQuilt();
             }
@@ -654,24 +639,11 @@ function loadQuilt(input: HTMLInputElement): void {
                 renderLibrary();
             }
 
-            // Restore grid config (with backwards compatibility)
+            // Restore grid config
             if (quiltData.gridConfig) {
                 gridConfig = quiltData.gridConfig;
-                // Migrate old saves to new format
-                if (gridConfig.squaresPerSide && !gridConfig.customRows) {
-                    gridConfig.customRows = gridConfig.squaresPerSide;
-                    gridConfig.customCols = gridConfig.squaresPerSide;
-                }
-                // Ensure default values exist
-                if (!gridConfig.customRows) {
-                    gridConfig.customRows = 4;
-                }
-                if (!gridConfig.customCols) {
-                    gridConfig.customCols = 4;
-                }
-            } else {
-                // Default to simple mode for old saves
-                gridConfig = { mode: "simple", customRows: 4, customCols: 4 };
+                rows = gridConfig.rows;
+                cols = gridConfig.cols;
             }
 
             alert("Quilt loaded successfully!");
@@ -687,34 +659,33 @@ function loadQuilt(input: HTMLInputElement): void {
 
 // Map landscape index to portrait index (rotate 90 degrees clockwise)
 function landscapeToPortrait(landscapeIndex: number): number {
-    // Landscape is 6 rows x 8 cols
-    const row = Math.floor(landscapeIndex / 8);
-    const col = landscapeIndex % 8;
+    // Get current dimensions
+    const landscapeCols = gridConfig.rows; // In landscape, cols = portrait rows
+    const landscapeRows = gridConfig.cols; // In landscape, rows = portrait cols
 
-    // Map to portrait 8 rows x 6 cols (90 degree clockwise rotation)
-    // Landscape (r, c) -> Portrait (c, 5-r)
+    const row = Math.floor(landscapeIndex / landscapeCols);
+    const col = landscapeIndex % landscapeCols;
+
+    // Map to portrait (90 degree clockwise rotation)
     const portraitRow = col;
-    const portraitCol = 5 - row;
-    return portraitRow * 6 + portraitCol;
+    const portraitCol = landscapeRows - 1 - row;
+    return portraitRow * gridConfig.cols + portraitCol;
 }
 
-// Check orientation and adjust grid
+// Update grid dimensions from config, swapping to maximize screen usage
 function updateOrientation(): void {
-    // In custom mode, grid doesn't change with orientation
-    if (gridConfig.mode === "custom") {
-        rows = gridConfig.customRows || 4;
-        cols = gridConfig.customCols || 4;
-        return;
-    }
-
-    // In simple mode, adapt to orientation
     const isPortrait = window.innerHeight > window.innerWidth;
-    if (isPortrait) {
-        rows = 8;
-        cols = 6;
+    const configIsWiderThanTall = gridConfig.cols > gridConfig.rows;
+
+    // If portrait screen and config is wider, OR landscape screen and config is taller, swap them
+    if ((isPortrait && configIsWiderThanTall) || (!isPortrait && !configIsWiderThanTall)) {
+        // Swap to match screen orientation
+        rows = gridConfig.cols;
+        cols = gridConfig.rows;
     } else {
-        rows = 6;
-        cols = 8;
+        // Use as-is
+        rows = gridConfig.rows;
+        cols = gridConfig.cols;
     }
 }
 
@@ -757,10 +728,10 @@ function renderQuilt(): void {
         const square = document.createElement("div");
         square.className = "quilt-square";
 
-        // Get the correct pattern index based on orientation and mode
+        // Get the correct pattern index based on orientation
         let patternIndex = i;
-        if (gridConfig.mode === "simple" && !isPortrait) {
-            // In simple mode landscape, use rotation mapping
+        if (!isPortrait) {
+            // In landscape, use rotation mapping
             patternIndex = landscapeToPortrait(i);
         }
         const pattern = patterns[patternIndex];
@@ -1074,17 +1045,6 @@ function openGridSettings(): void {
     const modal = document.getElementById("gridSettingsModal")!;
     modal.classList.add("active");
 
-    // Set current mode
-    const modeRadios = document.querySelectorAll(
-        'input[name="gridMode"]'
-    ) as NodeListOf<HTMLInputElement>;
-    modeRadios.forEach((radio) => {
-        radio.checked = radio.value === gridConfig.mode;
-    });
-
-    // Update grid units section visibility
-    updateGridMode();
-
     // Set active buttons
     updateColumnsButtons();
     updateRowsButtons();
@@ -1096,29 +1056,14 @@ function closeGridSettings(): void {
     modal.classList.remove("active");
 }
 
-function updateGridMode(): void {
-    const selectedMode = (
-        document.querySelector(
-            'input[name="gridMode"]:checked'
-        ) as HTMLInputElement
-    )?.value as "simple" | "custom";
-    const gridUnitsSection = document.getElementById("gridUnitsSection")!;
-
-    if (selectedMode === "custom") {
-        gridUnitsSection.style.display = "flex";
-    } else {
-        gridUnitsSection.style.display = "none";
-    }
-}
-
 function setColumns(count: number): void {
-    gridConfig.customCols = count;
+    gridConfig.cols = count;
     updateColumnsButtons();
     updateGridResult();
 }
 
 function setRows(count: number): void {
-    gridConfig.customRows = count;
+    gridConfig.rows = count;
     updateRowsButtons();
     updateGridResult();
 }
@@ -1132,7 +1077,7 @@ function updateColumnsButtons(): void {
         const buttonCount = parseInt(
             (btn as HTMLElement).textContent || "4"
         );
-        if (buttonCount === gridConfig.customCols) {
+        if (buttonCount === gridConfig.cols) {
             btn.classList.add("active");
         } else {
             btn.classList.remove("active");
@@ -1149,7 +1094,7 @@ function updateRowsButtons(): void {
         const buttonCount = parseInt(
             (btn as HTMLElement).textContent || "4"
         );
-        if (buttonCount === gridConfig.customRows) {
+        if (buttonCount === gridConfig.rows) {
             btn.classList.add("active");
         } else {
             btn.classList.remove("active");
@@ -1161,84 +1106,16 @@ function updateGridResult(): void {
     const resultDiv = document.getElementById("gridResult");
     if (!resultDiv) return;
 
-    const customCols = gridConfig.customCols || 4;
-    const customRows = gridConfig.customRows || 4;
-    const totalSquares = customCols * customRows;
+    const totalSquares = gridConfig.cols * gridConfig.rows;
 
-    resultDiv.innerHTML = `<p>Grid: <strong>${customCols} columns × ${customRows} rows (${totalSquares} squares)</strong></p>`;
+    resultDiv.innerHTML = `<p>Grid: <strong>${gridConfig.cols} columns × ${gridConfig.rows} rows (${totalSquares} squares)</strong></p>`;
 }
-
-// Pending grid settings to apply after confirmation
-let pendingGridSettings: {mode: "simple" | "custom"} | null = null;
 
 function applyGridSettings(): void {
-    const selectedMode = (
-        document.querySelector(
-            'input[name="gridMode"]:checked'
-        ) as HTMLInputElement
-    )?.value as "simple" | "custom";
-
-    const previousMode = gridConfig.mode;
-
-    // Check if we're switching modes
-    if (previousMode !== selectedMode) {
-        // Store pending settings and show custom confirmation modal
-        pendingGridSettings = { mode: selectedMode };
-        showConfirmSaveModal();
-        return;
-    }
-
-    // Same mode, but might have changed rows/cols - apply directly
-    applyGridSettingsInternal(selectedMode);
-}
-
-function applyGridSettingsInternal(selectedMode: "simple" | "custom"): void {
-    gridConfig.mode = selectedMode;
-
-    if (selectedMode === "simple") {
-        // Standard mode: 6×8 portrait / 8×6 landscape
-        initializeColors();
-        renderQuilt();
-    } else {
-        // Custom mode: use custom rows and columns
-        rows = gridConfig.customRows || 4;
-        cols = gridConfig.customCols || 4;
-
-        // Reinitialize patterns for the new grid size
-        initializeColors();
-        renderQuilt();
-    }
-
+    // Reinitialize patterns for the new grid size
+    initializeColors();
+    renderQuilt();
     closeGridSettings();
-}
-
-function showConfirmSaveModal(): void {
-    // Close grid settings modal first
-    closeGridSettings();
-
-    const modal = document.getElementById("confirmSaveModal");
-    if (modal) {
-        modal.classList.add("active");
-    }
-}
-
-function closeConfirmSaveModal(): void {
-    const modal = document.getElementById("confirmSaveModal")!;
-    modal.classList.remove("active");
-}
-
-function confirmSaveResponse(shouldSave: boolean): void {
-    if (shouldSave) {
-        saveQuilt();
-    }
-
-    // Apply the pending grid settings
-    if (pendingGridSettings) {
-        applyGridSettingsInternal(pendingGridSettings.mode);
-        pendingGridSettings = null;
-    }
-
-    closeConfirmSaveModal();
 }
 
 // Make functions available globally for HTML onclick handlers
@@ -1249,11 +1126,9 @@ function confirmSaveResponse(shouldSave: boolean): void {
 (window as any).loadQuilt = loadQuilt;
 (window as any).openGridSettings = openGridSettings;
 (window as any).closeGridSettings = closeGridSettings;
-(window as any).updateGridMode = updateGridMode;
 (window as any).setColumns = setColumns;
 (window as any).setRows = setRows;
 (window as any).applyGridSettings = applyGridSettings;
-(window as any).confirmSaveResponse = confirmSaveResponse;
 
 // Initial render
 initializeColors();
