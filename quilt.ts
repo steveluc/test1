@@ -134,6 +134,9 @@ function createRandomPattern(): Pattern {
         "diagonal",
         "checkerboard",
         "quartersquare",
+        "ninepatch",
+        "pinwheel",
+        "flyinggeese",
     ];
     const type = types[Math.floor(Math.random() * types.length)];
 
@@ -167,6 +170,27 @@ function createRandomPattern(): Pattern {
                 getRandomColor(),
                 getRandomColor(),
             ],
+            rotation: 0,
+        };
+    } else if (type === "ninepatch") {
+        // Generate 3 colors for nine patch
+        return {
+            type: "ninepatch",
+            colors: [getRandomColor(), getRandomColor(), getRandomColor()],
+            rotation: 0,
+        };
+    } else if (type === "pinwheel") {
+        // Generate 2 colors for pinwheel
+        return {
+            type: "pinwheel",
+            colors: [getRandomColor(), getRandomColor()],
+            rotation: 0,
+        };
+    } else if (type === "flyinggeese") {
+        // Generate 3 colors for flying geese (2 geese + background)
+        return {
+            type: "flyinggeese",
+            colors: [getRandomColor(), getRandomColor(), getRandomColor()],
             rotation: 0,
         };
     }
@@ -253,15 +277,18 @@ function getPatternStyle(pattern: Pattern): string {
         }
         return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${rects}</svg>")`;
     } else if (pattern.type === "pinwheel") {
-        // Create pinwheel pattern (4 half-square triangles rotating)
+        // Create pinwheel pattern (8 triangles all pointing to center, alternating colors)
         const c0 = pattern.colors[0].replace("#", "%23");
         const c1 = pattern.colors[1].replace("#", "%23");
-        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 50,0 50,50' fill='${c0}'/><polygon points='0,0 0,50 50,50' fill='${c1}'/><polygon points='50,0 100,0 100,50 50,50' fill='${c1}'/><polygon points='50,0 50,50 100,50' fill='${c0}'/><polygon points='0,50 50,50 50,100' fill='${c0}'/><polygon points='0,50 0,100 50,100' fill='${c1}'/><polygon points='50,50 100,50 100,100 50,100' fill='${c1}'/><polygon points='50,50 50,100 100,100' fill='${c0}'/></svg>")`;
+        // 8 triangles: center to each corner and center to each edge midpoint
+        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,50 0,0 50,0' fill='${c0}'/><polygon points='50,50 50,0 100,0' fill='${c1}'/><polygon points='50,50 100,0 100,50' fill='${c0}'/><polygon points='50,50 100,50 100,100' fill='${c1}'/><polygon points='50,50 100,100 50,100' fill='${c0}'/><polygon points='50,50 50,100 0,100' fill='${c1}'/><polygon points='50,50 0,100 0,50' fill='${c0}'/><polygon points='50,50 0,50 0,0' fill='${c1}'/></svg>")`;
     } else if (pattern.type === "flyinggeese") {
-        // Create flying geese pattern (large triangle with two side triangles)
-        const c0 = pattern.colors[0].replace("#", "%23"); // Main "geese" color
-        const c1 = pattern.colors[1].replace("#", "%23"); // Background "sky" color
-        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 0,100 100,50' fill='${c0}'/><polygon points='0,0 100,50 100,0' fill='${c1}'/><polygon points='0,100 100,50 100,100' fill='${c1}'/></svg>")`;
+        // Create flying geese pattern (left goose + right goose both pointing right, 4 background triangles)
+        const c0 = pattern.colors[0].replace("#", "%23"); // Left goose
+        const c1 = pattern.colors[1].replace("#", "%23"); // Right goose
+        const c2 = pattern.colors[2].replace("#", "%23"); // Background
+        // Left goose points right from left edge to middle, right goose points right from middle to right edge
+        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 0,100 50,50' fill='${c0}'/><polygon points='50,0 50,100 100,50' fill='${c1}'/><polygon points='0,0 50,0 50,50' fill='${c2}'/><polygon points='50,0 100,0 100,50' fill='${c2}'/><polygon points='0,100 50,100 50,50' fill='${c2}'/><polygon points='50,100 100,100 100,50' fill='${c2}'/></svg>")`;
     }
     return "";
 }
@@ -301,8 +328,8 @@ function updateColorPickers(): void {
         numColors = 2;
         defaultColors = ["#ff6b9d", "#667eea"];
     } else if (type === "flyinggeese") {
-        numColors = 2;
-        defaultColors = ["#ff6b9d", "#667eea"];
+        numColors = 3;
+        defaultColors = ["#ff6b9d", "#667eea", "#f093fb"];
     }
 
     for (let i = 0; i < numColors; i++) {
@@ -621,110 +648,139 @@ function exportQuiltAsPNG(): void {
             }
             ctx.restore();
         } else if (pattern.type === "pinwheel") {
-            // Draw pinwheel pattern (4 half-square triangles)
+            // Draw pinwheel pattern (8 triangles all pointing to center, alternating colors)
             const cx = exportSquareSize / 2;
             const cy = exportSquareSize / 2;
 
-            // Top-left quadrant
+            // Triangle 1: center to top-left corner and top edge midpoint
             ctx.fillStyle = pattern.colors[0];
             ctx.beginPath();
-            ctx.moveTo(0, 0);
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(0, 0);
             ctx.lineTo(cx, 0);
-            ctx.lineTo(cx, cy);
             ctx.closePath();
             ctx.fill();
 
+            // Triangle 2: center to top edge midpoint and top-right corner
             ctx.fillStyle = pattern.colors[1];
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, cy);
-            ctx.lineTo(cx, cy);
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, 0);
+            ctx.lineTo(exportSquareSize, 0);
             ctx.closePath();
             ctx.fill();
 
-            // Top-right quadrant
-            ctx.fillStyle = pattern.colors[1];
+            // Triangle 3: center to top-right corner and right edge midpoint
+            ctx.fillStyle = pattern.colors[0];
             ctx.beginPath();
-            ctx.moveTo(cx, 0);
+            ctx.moveTo(cx, cy);
             ctx.lineTo(exportSquareSize, 0);
             ctx.lineTo(exportSquareSize, cy);
-            ctx.lineTo(cx, cy);
             ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = pattern.colors[0];
+            // Triangle 4: center to right edge midpoint and bottom-right corner
+            ctx.fillStyle = pattern.colors[1];
             ctx.beginPath();
-            ctx.moveTo(cx, 0);
-            ctx.lineTo(cx, cy);
+            ctx.moveTo(cx, cy);
             ctx.lineTo(exportSquareSize, cy);
+            ctx.lineTo(exportSquareSize, exportSquareSize);
             ctx.closePath();
             ctx.fill();
 
-            // Bottom-left quadrant
+            // Triangle 5: center to bottom-right corner and bottom edge midpoint
             ctx.fillStyle = pattern.colors[0];
             ctx.beginPath();
-            ctx.moveTo(0, cy);
-            ctx.lineTo(cx, cy);
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(exportSquareSize, exportSquareSize);
             ctx.lineTo(cx, exportSquareSize);
             ctx.closePath();
             ctx.fill();
 
+            // Triangle 6: center to bottom edge midpoint and bottom-left corner
             ctx.fillStyle = pattern.colors[1];
             ctx.beginPath();
-            ctx.moveTo(0, cy);
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, exportSquareSize);
             ctx.lineTo(0, exportSquareSize);
-            ctx.lineTo(cx, exportSquareSize);
             ctx.closePath();
             ctx.fill();
 
-            // Bottom-right quadrant
-            ctx.fillStyle = pattern.colors[1];
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(exportSquareSize, cy);
-            ctx.lineTo(exportSquareSize, exportSquareSize);
-            ctx.lineTo(cx, exportSquareSize);
-            ctx.closePath();
-            ctx.fill();
-
+            // Triangle 7: center to bottom-left corner and left edge midpoint
             ctx.fillStyle = pattern.colors[0];
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.lineTo(cx, exportSquareSize);
-            ctx.lineTo(exportSquareSize, exportSquareSize);
+            ctx.lineTo(0, exportSquareSize);
+            ctx.lineTo(0, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            // Triangle 8: center to left edge midpoint and top-left corner
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(0, cy);
+            ctx.lineTo(0, 0);
             ctx.closePath();
             ctx.fill();
 
             ctx.restore();
         } else if (pattern.type === "flyinggeese") {
-            // Draw flying geese pattern
-            const cx = exportSquareSize;
-            const cy = exportSquareSize / 2;
+            // Draw flying geese pattern (left goose + right goose both pointing right, 4 background triangles)
+            const halfX = exportSquareSize / 2;
+            const halfY = exportSquareSize / 2;
 
-            // Main triangle (the "geese")
+            // Left goose triangle (pointing right to middle)
             ctx.fillStyle = pattern.colors[0];
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(0, exportSquareSize);
-            ctx.lineTo(cx, cy);
+            ctx.lineTo(halfX, halfY);
             ctx.closePath();
             ctx.fill();
 
-            // Top background triangle
+            // Right goose triangle (pointing right from middle)
             ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(halfX, 0);
+            ctx.lineTo(halfX, exportSquareSize);
+            ctx.lineTo(exportSquareSize, halfY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Top-left background triangle
+            ctx.fillStyle = pattern.colors[2];
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(cx, cy);
-            ctx.lineTo(cx, 0);
+            ctx.lineTo(halfX, 0);
+            ctx.lineTo(halfX, halfY);
             ctx.closePath();
             ctx.fill();
 
-            // Bottom background triangle
-            ctx.fillStyle = pattern.colors[1];
+            // Top-right background triangle
+            ctx.fillStyle = pattern.colors[2];
+            ctx.beginPath();
+            ctx.moveTo(halfX, 0);
+            ctx.lineTo(exportSquareSize, 0);
+            ctx.lineTo(halfX, halfY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom-left background triangle
+            ctx.fillStyle = pattern.colors[2];
             ctx.beginPath();
             ctx.moveTo(0, exportSquareSize);
-            ctx.lineTo(cx, cy);
-            ctx.lineTo(cx, exportSquareSize);
+            ctx.lineTo(halfX, exportSquareSize);
+            ctx.lineTo(halfX, halfY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom-right background triangle
+            ctx.fillStyle = pattern.colors[2];
+            ctx.beginPath();
+            ctx.moveTo(halfX, exportSquareSize);
+            ctx.lineTo(exportSquareSize, exportSquareSize);
+            ctx.lineTo(halfX, halfY);
             ctx.closePath();
             ctx.fill();
 
