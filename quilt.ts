@@ -6,7 +6,10 @@ interface Pattern {
         | "vertical"
         | "diagonal"
         | "checkerboard"
-        | "quartersquare";
+        | "quartersquare"
+        | "ninepatch"
+        | "pinwheel"
+        | "flyinggeese";
     colors: string[];
     rotation?: number;
 }
@@ -238,6 +241,27 @@ function getPatternStyle(pattern: Pattern): string {
         const c2 = pattern.colors[2].replace("#", "%23");
         const c3 = pattern.colors[3].replace("#", "%23");
         return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 100,0 50,50' fill='${c0}'/><polygon points='100,0 100,100 50,50' fill='${c1}'/><polygon points='100,100 0,100 50,50' fill='${c2}'/><polygon points='0,100 0,0 50,50' fill='${c3}'/></svg>")`;
+    } else if (pattern.type === "ninepatch") {
+        // Create nine-patch pattern (3x3 grid)
+        const colors = pattern.colors.map(c => c.replace("#", "%23"));
+        let rects = "";
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+                const colorIndex = (row * 3 + col) % colors.length;
+                rects += `<rect x='${col * 33.33}' y='${row * 33.33}' width='33.34' height='33.34' fill='${colors[colorIndex]}'/>`;
+            }
+        }
+        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${rects}</svg>")`;
+    } else if (pattern.type === "pinwheel") {
+        // Create pinwheel pattern (4 half-square triangles rotating)
+        const c0 = pattern.colors[0].replace("#", "%23");
+        const c1 = pattern.colors[1].replace("#", "%23");
+        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 50,0 50,50' fill='${c0}'/><polygon points='0,0 0,50 50,50' fill='${c1}'/><polygon points='50,0 100,0 100,50 50,50' fill='${c1}'/><polygon points='50,0 50,50 100,50' fill='${c0}'/><polygon points='0,50 50,50 50,100' fill='${c0}'/><polygon points='0,50 0,100 50,100' fill='${c1}'/><polygon points='50,50 100,50 100,100 50,100' fill='${c1}'/><polygon points='50,50 50,100 100,100' fill='${c0}'/></svg>")`;
+    } else if (pattern.type === "flyinggeese") {
+        // Create flying geese pattern (large triangle with two side triangles)
+        const c0 = pattern.colors[0].replace("#", "%23"); // Main "geese" color
+        const c1 = pattern.colors[1].replace("#", "%23"); // Background "sky" color
+        return `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='0,0 0,100 100,50' fill='${c0}'/><polygon points='0,0 100,50 100,0' fill='${c1}'/><polygon points='0,100 100,50 100,100' fill='${c1}'/></svg>")`;
     }
     return "";
 }
@@ -270,6 +294,15 @@ function updateColorPickers(): void {
     } else if (type === "quartersquare") {
         numColors = 4;
         defaultColors = ["#ff6b9d", "#764ba2", "#667eea", "#f093fb"];
+    } else if (type === "ninepatch") {
+        numColors = 3;
+        defaultColors = ["#ff6b9d", "#667eea", "#f093fb"];
+    } else if (type === "pinwheel") {
+        numColors = 2;
+        defaultColors = ["#ff6b9d", "#667eea"];
+    } else if (type === "flyinggeese") {
+        numColors = 2;
+        defaultColors = ["#ff6b9d", "#667eea"];
     }
 
     for (let i = 0; i < numColors; i++) {
@@ -575,6 +608,126 @@ function exportQuiltAsPNG(): void {
             ctx.lineTo(cx, cy);
             ctx.closePath();
             ctx.fill();
+            ctx.restore();
+        } else if (pattern.type === "ninepatch") {
+            // Draw nine-patch pattern (3x3 grid)
+            const patchSize = exportSquareSize / 3;
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const colorIndex = (row * 3 + col) % pattern.colors.length;
+                    ctx.fillStyle = pattern.colors[colorIndex];
+                    ctx.fillRect(col * patchSize, row * patchSize, patchSize, patchSize);
+                }
+            }
+            ctx.restore();
+        } else if (pattern.type === "pinwheel") {
+            // Draw pinwheel pattern (4 half-square triangles)
+            const cx = exportSquareSize / 2;
+            const cy = exportSquareSize / 2;
+
+            // Top-left quadrant
+            ctx.fillStyle = pattern.colors[0];
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(cx, 0);
+            ctx.lineTo(cx, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, cy);
+            ctx.lineTo(cx, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            // Top-right quadrant
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(exportSquareSize, 0);
+            ctx.lineTo(exportSquareSize, cy);
+            ctx.lineTo(cx, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = pattern.colors[0];
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(exportSquareSize, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom-left quadrant
+            ctx.fillStyle = pattern.colors[0];
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx, exportSquareSize);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(0, exportSquareSize);
+            ctx.lineTo(cx, exportSquareSize);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom-right quadrant
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(exportSquareSize, cy);
+            ctx.lineTo(exportSquareSize, exportSquareSize);
+            ctx.lineTo(cx, exportSquareSize);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = pattern.colors[0];
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, exportSquareSize);
+            ctx.lineTo(exportSquareSize, exportSquareSize);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        } else if (pattern.type === "flyinggeese") {
+            // Draw flying geese pattern
+            const cx = exportSquareSize;
+            const cy = exportSquareSize / 2;
+
+            // Main triangle (the "geese")
+            ctx.fillStyle = pattern.colors[0];
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, exportSquareSize);
+            ctx.lineTo(cx, cy);
+            ctx.closePath();
+            ctx.fill();
+
+            // Top background triangle
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bottom background triangle
+            ctx.fillStyle = pattern.colors[1];
+            ctx.beginPath();
+            ctx.moveTo(0, exportSquareSize);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx, exportSquareSize);
+            ctx.closePath();
+            ctx.fill();
+
             ctx.restore();
         }
     }
