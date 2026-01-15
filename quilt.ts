@@ -317,39 +317,12 @@ function renderLibrary(): void {
         }
 
         // Drag events
-        item.addEventListener("dragstart", (e) => {
+        item.addEventListener("dragstart", () => {
             draggedLibraryPattern = index;
             item.classList.add("dragging");
-
-            // Set custom drag image for library items on desktop
-            if (e.dataTransfer) {
-                const dragImage = item.cloneNode(true) as HTMLElement;
-                dragImage.style.position = "absolute";
-                dragImage.style.top = "-1000px";
-                dragImage.style.left = "0";
-                dragImage.style.width = item.offsetWidth + "px";
-                dragImage.style.height = item.offsetHeight + "px";
-
-                // Copy all relevant styles
-                dragImage.style.backgroundImage = item.style.backgroundImage;
-                dragImage.style.backgroundColor = item.style.backgroundColor;
-                dragImage.style.backgroundRepeat = item.style.backgroundRepeat;
-                dragImage.style.backgroundSize = "100% 100%";
-                dragImage.style.opacity = "1";
-
-                document.body.appendChild(dragImage);
-
-                e.dataTransfer.setDragImage(
-                    dragImage,
-                    item.offsetWidth / 2,
-                    item.offsetHeight / 2
-                );
-
-                setTimeout(() => dragImage.remove(), 0);
-            }
         });
 
-        item.addEventListener("dragend", (e) => {
+        item.addEventListener("dragend", () => {
             item.classList.remove("dragging");
             draggedLibraryPattern = null;
         });
