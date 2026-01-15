@@ -2,6 +2,10 @@
 
 An interactive web application for designing quilt patterns with drag-and-drop functionality, pattern library, and export capabilities.
 
+## Live Demo
+
+🌐 **[Try it now on GitHub Pages](https://steveluc.github.io/test1/)**
+
 ## Features
 
 - 🎨 **Pattern Designer** - Create solid colors, stripes (horizontal, vertical, diagonal), checkerboard, and quarter-square triangle patterns
