@@ -4,7 +4,7 @@ An interactive web application for designing quilt patterns with drag-and-drop f
 
 ## Live Demo
 
-🌐 **[Try it now on GitHub Pages](https://steveluc.github.io/test1/)**
+<img src="icon.svg" width="24" height="24" align="center"> **[Try it now on GitHub Pages](https://steveluc.github.io/test1/)**
 
 ## Features
 

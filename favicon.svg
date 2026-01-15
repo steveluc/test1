@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" fill="#f0f0f0"/>
+
+  <!-- Quilt grid - 3x3 -->
+  <!-- Top row -->
+  <rect x="2" y="2" width="30" height="30" fill="#ff6b9d"/>
+  <rect x="35" y="2" width="30" height="30" fill="#667eea"/>
+  <rect x="68" y="2" width="30" height="30" fill="#f093fb"/>
+
+  <!-- Middle row -->
+  <rect x="2" y="35" width="30" height="30" fill="#4facfe"/>
+  <rect x="35" y="35" width="30" height="30" fill="#feca57"/>
+  <rect x="68" y="35" width="30" height="30" fill="#48dbfb"/>
+
+  <!-- Bottom row -->
+  <rect x="2" y="68" width="30" height="30" fill="#1dd1a1"/>
+  <rect x="35" y="68" width="30" height="30" fill="#ff6348"/>
+  <rect x="68" y="68" width="30" height="30" fill="#764ba2"/>
+
+  <!-- Stitching lines (subtle borders) -->
+  <line x1="33" y1="0" x2="33" y2="100" stroke="#333" stroke-width="1" opacity="0.3"/>
+  <line x1="66" y1="0" x2="66" y2="100" stroke="#333" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="33" x2="100" y2="33" stroke="#333" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="66" x2="100" y2="66" stroke="#333" stroke-width="1" opacity="0.3"/>
+</svg>
