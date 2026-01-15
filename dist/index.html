@@ -4,12 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quilt Designer</title>
-  <script type="module" crossorigin src="./assets/index-AekS2rQ9.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DgzWx46x.css">
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon-CucQ2PAz.svg">
+  <script type="module" crossorigin src="./assets/index-B6DgGEEd.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-Zx4QDEKe.css">
 </head>
 <body>
     <div class="quilt-container">
+        <button class="grid-settings-btn" id="gridSettingsBtn" onclick="openGridSettings()" aria-label="Grid Settings">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M16.25 10C16.25 10.4167 16.2083 10.8333 16.125 11.25L18.0417 12.6667L16.5417 15.3333L14.2917 14.5833C13.7083 15.0833 13.0417 15.4583 12.2917 15.7083L11.875 18.125H8.875L8.45833 15.7083C7.70833 15.4583 7.04167 15.0833 6.45833 14.5833L4.20833 15.3333L2.70833 12.6667L4.625 11.25C4.54167 10.8333 4.5 10.4167 4.5 10C4.5 9.58333 4.54167 9.16667 4.625 8.75L2.70833 7.33333L4.20833 4.66667L6.45833 5.41667C7.04167 4.91667 7.70833 4.54167 8.45833 4.29167L8.875 1.875H11.875L12.2917 4.29167C13.0417 4.54167 13.7083 4.91667 14.2917 5.41667L16.5417 4.66667L18.0417 7.33333L16.125 8.75C16.2083 9.16667 16.25 9.58333 16.25 10Z" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+        </button>
         <div class="quilt" id="quilt"></div>
+    </div>
+
+    <!-- Confirm Save Modal -->
+    <div class="modal-overlay" id="confirmSaveModal">
+        <div class="modal-content confirm-modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Save Current Design?</h3>
+            </div>
+            <div class="modal-body">
+                <p>Would you like to save your current design before switching modes?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="confirmSaveResponse(false)">No</button>
+                <button class="btn-primary" onclick="confirmSaveResponse(true)">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid Settings Modal -->
+    <div class="modal-overlay" id="gridSettingsModal" onclick="closeGridSettings()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Grid Settings</h3>
+                <button class="modal-close" onclick="closeGridSettings()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-mode-section">
+                    <label class="mode-label">
+                        <input type="radio" name="gridMode" value="simple" checked onchange="updateGridMode()">
+                        <span>Simple Mode</span>
+                        <p class="mode-description">Fixed 6×8 (portrait) or 8×6 (landscape) grid</p>
+                    </label>
+                    <label class="mode-label">
+                        <input type="radio" name="gridMode" value="custom" onchange="updateGridMode()">
+                        <span>Custom Mode</span>
+                        <p class="mode-description">Choose grid size for variable square layouts</p>
+                    </label>
+                </div>
+
+                <div class="grid-units-section" id="gridUnitsSection" style="display: none;">
+                    <label>Columns (width)</label>
+                    <div class="units-buttons">
+                        <button class="unit-btn" onclick="setColumns(2)">2</button>
+                        <button class="unit-btn" onclick="setColumns(3)">3</button>
+                        <button class="unit-btn active" onclick="setColumns(4)">4</button>
+                        <button class="unit-btn" onclick="setColumns(5)">5</button>
+                        <button class="unit-btn" onclick="setColumns(6)">6</button>
+                        <button class="unit-btn" onclick="setColumns(7)">7</button>
+                        <button class="unit-btn" onclick="setColumns(8)">8</button>
+                    </div>
+
+                    <label style="margin-top: 16px;">Rows (height)</label>
+                    <div class="units-buttons">
+                        <button class="unit-btn" onclick="setRows(2)">2</button>
+                        <button class="unit-btn" onclick="setRows(3)">3</button>
+                        <button class="unit-btn active" onclick="setRows(4)">4</button>
+                        <button class="unit-btn" onclick="setRows(5)">5</button>
+                        <button class="unit-btn" onclick="setRows(6)">6</button>
+                        <button class="unit-btn" onclick="setRows(7)">7</button>
+                        <button class="unit-btn" onclick="setRows(8)">8</button>
+                    </div>
+
+                    <div class="grid-result" id="gridResult">
+                        <p>Grid: <strong>4 columns × 4 rows (16 squares)</strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="applyGridSettings()">Apply</button>
+            </div>
+        </div>
     </div>
 
     <div class="controls-wrapper">

@@ -244,3 +244,330 @@ button:hover {
     min-width: 80px;
     margin-top: 0 !important;
 }
+
+/* Grid Settings Button */
+.grid-settings-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    color: #555;
+}
+
+.grid-settings-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.grid-settings-btn:active {
+    transform: scale(0.95);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* Modal Content */
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: modalSlideUp 0.3s ease-out;
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Grid Mode Section */
+.grid-mode-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mode-label {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-label:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.mode-label input[type="radio"] {
+    display: none;
+}
+
+.mode-label input[type="radio"]:checked + span {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.mode-label input[type="radio"]:checked ~ * {
+    border-color: #667eea;
+}
+
+.mode-label input[type="radio"]:checked {
+    & ~ * {
+        border-color: #667eea;
+    }
+    & + span::before {
+        content: "✓ ";
+        color: #667eea;
+    }
+}
+
+.mode-label span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.mode-description {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+}
+
+/* Grid Units Section */
+.grid-units-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.grid-units-section label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.units-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.unit-btn {
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.unit-btn:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.unit-btn.active {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+}
+
+.units-hint {
+    font-size: 11px;
+    color: #999;
+    margin: 0;
+    text-align: center;
+}
+
+.grid-result {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f8f9ff;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.grid-result p {
+    margin: 0;
+    font-size: 13px;
+    color: #555;
+}
+
+.grid-result strong {
+    color: #667eea;
+    font-size: 14px;
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: #d0d0d0;
+    transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+/* Confirm Modal Specific Styles */
+.confirm-modal {
+    max-width: 360px;
+}
+
+.confirm-modal .modal-body {
+    text-align: center;
+    padding: 24px 20px;
+}
+
+.confirm-modal .modal-body p {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #555;
+    margin: 0;
+}
+
+.confirm-modal .modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.confirm-modal .modal-footer button {
+    flex: 1;
+}

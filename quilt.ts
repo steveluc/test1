@@ -11,9 +11,20 @@ interface Pattern {
     rotation?: number;
 }
 
+interface GridConfig {
+    mode: "simple" | "custom";
+    customRows?: number; // Number of rows in custom mode
+    customCols?: number; // Number of columns in custom mode
+    // Deprecated fields for backwards compatibility
+    gridUnits?: number;
+    squareSize?: number;
+    squaresPerSide?: number;
+}
+
 interface QuiltData {
     patterns: Pattern[];
     library: Pattern[];
+    gridConfig?: GridConfig; // Optional for backwards compatibility
     savedAt: string;
 }
 
@@ -28,6 +39,11 @@ let draggedLibraryPattern: number | null = null;
 let dragGhost: HTMLElement | null = null;
 let lastTapTime: number = 0;
 let lastTapIndex: number = -1;
+let gridConfig: GridConfig = {
+    mode: "simple",
+    customRows: 4,
+    customCols: 4,
+};
 
 // Create drag ghost element
 function createDragGhost(sourceElement: HTMLElement, touch: Touch): void {
@@ -82,8 +98,9 @@ function rotatePattern(index: number): void {
 // Calculate optimal square size based on viewport
 function calculateSquareSize(): number {
     const isPortrait = window.innerHeight > window.innerWidth;
-    const numCols = isPortrait ? 6 : 8;
-    const numRows = isPortrait ? 8 : 6;
+    // Use actual rows/cols instead of hardcoded values
+    const numCols = cols;
+    const numRows = rows;
 
     let availableHeight: number, availableWidth: number;
 
@@ -164,11 +181,11 @@ function createRandomPattern(): Pattern {
     return { type: "solid", colors: [getRandomColor()], rotation: 0 };
 }
 
-// Initialize pattern array (always 8x6 for portrait)
+// Initialize pattern array
 function initializeColors(): void {
     patterns = [];
-    for (let i = 0; i < 48; i++) {
-        // 8x6 = 48
+    const totalSquares = rows * cols;
+    for (let i = 0; i < totalSquares; i++) {
         patterns.push(createRandomPattern());
     }
 }
@@ -437,9 +454,9 @@ function renderLibrary(): void {
 
 // Export quilt as PNG
 function exportQuiltAsPNG(): void {
-    const isPortrait = window.innerHeight > window.innerWidth;
-    const numCols = isPortrait ? 6 : 8;
-    const numRows = isPortrait ? 8 : 6;
+    // Use current grid dimensions
+    const numCols = cols;
+    const numRows = rows;
 
     // Create canvas with appropriate size (use fixed square size for export)
     const exportSquareSize = 100; // Higher resolution for export
@@ -455,8 +472,9 @@ function exportQuiltAsPNG(): void {
         const x = col * exportSquareSize;
         const y = row * exportSquareSize;
 
-        // Get the correct pattern index based on orientation
-        const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+        // Get the correct pattern index (use landscape conversion only in simple mode when in landscape)
+        const currentIsPortrait = window.innerHeight > window.innerWidth;
+        const patternIndex = gridConfig.mode === "simple" && !currentIsPortrait ? landscapeToPortrait(i) : i;
         const pattern = patterns[patternIndex];
         const rotation = pattern.rotation || 0;
 
@@ -596,6 +614,7 @@ function saveQuilt(): void {
     const quiltData: QuiltData = {
         patterns: patterns,
         library: library,
+        gridConfig: gridConfig,
         savedAt: new Date().toISOString(),
     };
 
@@ -635,6 +654,26 @@ function loadQuilt(input: HTMLInputElement): void {
                 renderLibrary();
             }
 
+            // Restore grid config (with backwards compatibility)
+            if (quiltData.gridConfig) {
+                gridConfig = quiltData.gridConfig;
+                // Migrate old saves to new format
+                if (gridConfig.squaresPerSide && !gridConfig.customRows) {
+                    gridConfig.customRows = gridConfig.squaresPerSide;
+                    gridConfig.customCols = gridConfig.squaresPerSide;
+                }
+                // Ensure default values exist
+                if (!gridConfig.customRows) {
+                    gridConfig.customRows = 4;
+                }
+                if (!gridConfig.customCols) {
+                    gridConfig.customCols = 4;
+                }
+            } else {
+                // Default to simple mode for old saves
+                gridConfig = { mode: "simple", customRows: 4, customCols: 4 };
+            }
+
             alert("Quilt loaded successfully!");
         } catch (error) {
             alert("Error loading quilt: " + (error as Error).message);
@@ -661,8 +700,15 @@ function landscapeToPortrait(landscapeIndex: number): number {
 
 // Check orientation and adjust grid
 function updateOrientation(): void {
-    const isPortrait = window.innerHeight > window.innerWidth;
+    // In custom mode, grid doesn't change with orientation
+    if (gridConfig.mode === "custom") {
+        rows = gridConfig.customRows || 4;
+        cols = gridConfig.customCols || 4;
+        return;
+    }
 
+    // In simple mode, adapt to orientation
+    const isPortrait = window.innerHeight > window.innerWidth;
     if (isPortrait) {
         rows = 8;
         cols = 6;
@@ -693,13 +739,17 @@ function renderQuilt(): void {
 
     updateOrientation();
 
+    // Set CSS grid columns dynamically
+    quilt.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
     // Calculate optimal square size
     squareSize = calculateSquareSize();
 
     const isPortrait = window.innerHeight > window.innerWidth;
+    const expectedPatternCount = rows * cols;
 
     // Ensure we have patterns initialized
-    if (patterns.length !== 48) {
+    if (patterns.length !== expectedPatternCount) {
         initializeColors();
     }
 
@@ -707,8 +757,12 @@ function renderQuilt(): void {
         const square = document.createElement("div");
         square.className = "quilt-square";
 
-        // Get the correct pattern index based on orientation
-        const patternIndex = isPortrait ? i : landscapeToPortrait(i);
+        // Get the correct pattern index based on orientation and mode
+        let patternIndex = i;
+        if (gridConfig.mode === "simple" && !isPortrait) {
+            // In simple mode landscape, use rotation mapping
+            patternIndex = landscapeToPortrait(i);
+        }
         const pattern = patterns[patternIndex];
 
         // Apply pattern style
@@ -1015,12 +1069,191 @@ function renderQuilt(): void {
 window.addEventListener("resize", renderQuilt);
 window.addEventListener("orientationchange", renderQuilt);
 
+// Grid Settings Modal Functions
+function openGridSettings(): void {
+    const modal = document.getElementById("gridSettingsModal")!;
+    modal.classList.add("active");
+
+    // Set current mode
+    const modeRadios = document.querySelectorAll(
+        'input[name="gridMode"]'
+    ) as NodeListOf<HTMLInputElement>;
+    modeRadios.forEach((radio) => {
+        radio.checked = radio.value === gridConfig.mode;
+    });
+
+    // Update grid units section visibility
+    updateGridMode();
+
+    // Set active buttons
+    updateColumnsButtons();
+    updateRowsButtons();
+    updateGridResult();
+}
+
+function closeGridSettings(): void {
+    const modal = document.getElementById("gridSettingsModal")!;
+    modal.classList.remove("active");
+}
+
+function updateGridMode(): void {
+    const selectedMode = (
+        document.querySelector(
+            'input[name="gridMode"]:checked'
+        ) as HTMLInputElement
+    )?.value as "simple" | "custom";
+    const gridUnitsSection = document.getElementById("gridUnitsSection")!;
+
+    if (selectedMode === "custom") {
+        gridUnitsSection.style.display = "flex";
+    } else {
+        gridUnitsSection.style.display = "none";
+    }
+}
+
+function setColumns(count: number): void {
+    gridConfig.customCols = count;
+    updateColumnsButtons();
+    updateGridResult();
+}
+
+function setRows(count: number): void {
+    gridConfig.customRows = count;
+    updateRowsButtons();
+    updateGridResult();
+}
+
+function updateColumnsButtons(): void {
+    const unitsSection = document.getElementById("gridUnitsSection");
+    if (!unitsSection) return;
+
+    const buttons = unitsSection.querySelectorAll(".units-buttons")[0].querySelectorAll(".unit-btn");
+    buttons.forEach((btn) => {
+        const buttonCount = parseInt(
+            (btn as HTMLElement).textContent || "4"
+        );
+        if (buttonCount === gridConfig.customCols) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
+function updateRowsButtons(): void {
+    const unitsSection = document.getElementById("gridUnitsSection");
+    if (!unitsSection) return;
+
+    const buttons = unitsSection.querySelectorAll(".units-buttons")[1].querySelectorAll(".unit-btn");
+    buttons.forEach((btn) => {
+        const buttonCount = parseInt(
+            (btn as HTMLElement).textContent || "4"
+        );
+        if (buttonCount === gridConfig.customRows) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
+function updateGridResult(): void {
+    const resultDiv = document.getElementById("gridResult");
+    if (!resultDiv) return;
+
+    const customCols = gridConfig.customCols || 4;
+    const customRows = gridConfig.customRows || 4;
+    const totalSquares = customCols * customRows;
+
+    resultDiv.innerHTML = `<p>Grid: <strong>${customCols} columns × ${customRows} rows (${totalSquares} squares)</strong></p>`;
+}
+
+// Pending grid settings to apply after confirmation
+let pendingGridSettings: {mode: "simple" | "custom"} | null = null;
+
+function applyGridSettings(): void {
+    const selectedMode = (
+        document.querySelector(
+            'input[name="gridMode"]:checked'
+        ) as HTMLInputElement
+    )?.value as "simple" | "custom";
+
+    const previousMode = gridConfig.mode;
+
+    // Check if we're switching modes
+    if (previousMode !== selectedMode) {
+        // Store pending settings and show custom confirmation modal
+        pendingGridSettings = { mode: selectedMode };
+        showConfirmSaveModal();
+        return;
+    }
+
+    // Same mode, but might have changed rows/cols - apply directly
+    applyGridSettingsInternal(selectedMode);
+}
+
+function applyGridSettingsInternal(selectedMode: "simple" | "custom"): void {
+    gridConfig.mode = selectedMode;
+
+    if (selectedMode === "simple") {
+        // Standard mode: 6×8 portrait / 8×6 landscape
+        initializeColors();
+        renderQuilt();
+    } else {
+        // Custom mode: use custom rows and columns
+        rows = gridConfig.customRows || 4;
+        cols = gridConfig.customCols || 4;
+
+        // Reinitialize patterns for the new grid size
+        initializeColors();
+        renderQuilt();
+    }
+
+    closeGridSettings();
+}
+
+function showConfirmSaveModal(): void {
+    // Close grid settings modal first
+    closeGridSettings();
+
+    const modal = document.getElementById("confirmSaveModal");
+    if (modal) {
+        modal.classList.add("active");
+    }
+}
+
+function closeConfirmSaveModal(): void {
+    const modal = document.getElementById("confirmSaveModal")!;
+    modal.classList.remove("active");
+}
+
+function confirmSaveResponse(shouldSave: boolean): void {
+    if (shouldSave) {
+        saveQuilt();
+    }
+
+    // Apply the pending grid settings
+    if (pendingGridSettings) {
+        applyGridSettingsInternal(pendingGridSettings.mode);
+        pendingGridSettings = null;
+    }
+
+    closeConfirmSaveModal();
+}
+
 // Make functions available globally for HTML onclick handlers
 (window as any).updateColorPickers = updateColorPickers;
 (window as any).addPatternToLibrary = addPatternToLibrary;
 (window as any).exportQuiltAsPNG = exportQuiltAsPNG;
 (window as any).saveQuilt = saveQuilt;
 (window as any).loadQuilt = loadQuilt;
+(window as any).openGridSettings = openGridSettings;
+(window as any).closeGridSettings = closeGridSettings;
+(window as any).updateGridMode = updateGridMode;
+(window as any).setColumns = setColumns;
+(window as any).setRows = setRows;
+(window as any).applyGridSettings = applyGridSettings;
+(window as any).confirmSaveResponse = confirmSaveResponse;
 
 // Initial render
 initializeColors();
