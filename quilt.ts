@@ -1090,7 +1090,7 @@ function renderQuilt(): void {
         // Double-click to rotate
         square.addEventListener("dblclick", (e) => {
             e.preventDefault();
-            rotatePattern(i);
+            rotatePattern(patternIndex);
         });
 
         // Drag over - allow dropping
@@ -1138,7 +1138,7 @@ function renderQuilt(): void {
             // Check for double-tap (within 300ms on same square)
             if (tapInterval < 300 && tapInterval > 0 && lastTapIndex === i) {
                 e.preventDefault();
-                rotatePattern(i);
+                rotatePattern(patternIndex);
                 lastTapTime = 0;
                 lastTapIndex = -1;
                 return;
