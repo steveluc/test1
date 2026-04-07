@@ -199,9 +199,10 @@ function createRandomPattern(): Pattern {
 }
 
 // Initialize pattern array
+// Always uses canonical gridConfig dimensions, not display rows/cols
 function initializeColors(): void {
     patterns = [];
-    const totalSquares = rows * cols;
+    const totalSquares = gridConfig.rows * gridConfig.cols;
     for (let i = 0; i < totalSquares; i++) {
         patterns.push(createRandomPattern());
     }
@@ -456,13 +457,16 @@ function renderLibrary(): void {
                 );
 
                 if (targetSquareIndex !== -1) {
+                    // Get correct pattern index based on orientation
+                    const targetPatternIndex = domIndexToPatternIndex(targetSquareIndex);
+
                     // Copy pattern from library
-                    patterns[targetSquareIndex] = JSON.parse(
+                    patterns[targetPatternIndex] = JSON.parse(
                         JSON.stringify(library[index])
                     );
 
                     // Update visual
-                    const newPattern = patterns[targetSquareIndex];
+                    const newPattern = patterns[targetPatternIndex];
                     const newStyle = getPatternStyle(newPattern);
                     const target = elementBelow as HTMLElement;
                     if (newPattern.type === "solid") {
@@ -517,9 +521,8 @@ function exportQuiltAsPNG(): void {
         const x = col * exportSquareSize;
         const y = row * exportSquareSize;
 
-        // Get the correct pattern index (use landscape conversion when in landscape)
-        const currentIsPortrait = window.innerHeight > window.innerWidth;
-        const patternIndex = !currentIsPortrait ? landscapeToPortrait(i) : i;
+        // Get the correct pattern index based on orientation
+        const patternIndex = domIndexToPatternIndex(i);
         const pattern = patterns[patternIndex];
         const rotation = pattern.rotation || 0;
 
@@ -866,19 +869,31 @@ function loadQuilt(input: HTMLInputElement): void {
     reader.readAsText(file);
 }
 
-// Map landscape index to portrait index (rotate 90 degrees clockwise)
-function landscapeToPortrait(landscapeIndex: number): number {
-    // Get current dimensions
-    const landscapeCols = gridConfig.rows; // In landscape, cols = portrait rows
-    const landscapeRows = gridConfig.cols; // In landscape, rows = portrait cols
+// Map DOM index to pattern array index based on orientation
+// Patterns array is always stored in canonical gridConfig orientation
+function domIndexToPatternIndex(domIndex: number): number {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    const configIsWiderThanTall = gridConfig.cols > gridConfig.rows;
+    const shouldRotate = (isPortrait && configIsWiderThanTall) || (!isPortrait && !configIsWiderThanTall);
 
-    const row = Math.floor(landscapeIndex / landscapeCols);
-    const col = landscapeIndex % landscapeCols;
+    if (!shouldRotate) {
+        // No rotation needed - DOM layout matches pattern array layout
+        return domIndex;
+    }
 
-    // Map to portrait (90 degree clockwise rotation)
-    const portraitRow = col;
-    const portraitCol = landscapeRows - 1 - row;
-    return portraitRow * gridConfig.cols + portraitCol;
+    // Rotation needed - DOM is rotated 90° from pattern array
+    // DOM dimensions (rotated from config)
+    const domCols = gridConfig.rows;
+    const domRows = gridConfig.cols;
+
+    // Get position in DOM grid
+    const domRow = Math.floor(domIndex / domCols);
+    const domCol = domIndex % domCols;
+
+    // Map to pattern array (rotate 90° clockwise)
+    const patternRow = domCol;
+    const patternCol = domRows - 1 - domRow;
+    return patternRow * gridConfig.cols + patternCol;
 }
 
 // Update grid dimensions from config, swapping to maximize screen usage
@@ -926,7 +941,7 @@ function renderQuilt(): void {
     squareSize = calculateSquareSize();
 
     const isPortrait = window.innerHeight > window.innerWidth;
-    const expectedPatternCount = rows * cols;
+    const expectedPatternCount = gridConfig.rows * gridConfig.cols;
 
     // Ensure we have patterns initialized
     if (patterns.length !== expectedPatternCount) {
@@ -938,11 +953,7 @@ function renderQuilt(): void {
         square.className = "quilt-square";
 
         // Get the correct pattern index based on orientation
-        let patternIndex = i;
-        if (!isPortrait) {
-            // In landscape, use rotation mapping
-            patternIndex = landscapeToPortrait(i);
-        }
+        const patternIndex = domIndexToPatternIndex(i);
         const pattern = patterns[patternIndex];
 
         // Apply pattern style
@@ -954,7 +965,7 @@ function renderQuilt(): void {
 
         // Drag start - remember which square is being dragged
         square.addEventListener("dragstart", (e) => {
-            draggedIndex = i;
+            draggedIndex = patternIndex;
             square.classList.add("dragging");
 
             // Set custom drag image to preserve rotation on desktop
@@ -967,9 +978,8 @@ function renderQuilt(): void {
                 const ctx = canvas.getContext("2d")!;
 
                 // Get the pattern and rotation
-                const patternIndex = isPortrait ? i : landscapeToPortrait(i);
-                const pattern = patterns[patternIndex];
-                const rotation = pattern.rotation || 0;
+                const dragPattern = patterns[patternIndex];
+                const rotation = dragPattern.rotation || 0;
 
                 // Apply rotation
                 ctx.save();
@@ -978,23 +988,23 @@ function renderQuilt(): void {
                 ctx.translate(-size / 2, -size / 2);
 
                 // Draw the pattern
-                if (pattern.type === "solid") {
-                    ctx.fillStyle = pattern.colors[0];
+                if (dragPattern.type === "solid") {
+                    ctx.fillStyle = dragPattern.colors[0];
                     ctx.fillRect(0, 0, size, size);
                 } else if (
-                    pattern.type === "horizontal" ||
-                    pattern.type === "vertical" ||
-                    pattern.type === "diagonal"
+                    dragPattern.type === "horizontal" ||
+                    dragPattern.type === "vertical" ||
+                    dragPattern.type === "diagonal"
                 ) {
                     // Draw stripes
                     const stripeSize = size / 5;
                     for (let j = 0; j < 5; j++) {
-                        ctx.fillStyle = pattern.colors[j];
-                        if (pattern.type === "horizontal") {
+                        ctx.fillStyle = dragPattern.colors[j];
+                        if (dragPattern.type === "horizontal") {
                             ctx.fillRect(0, j * stripeSize, size, stripeSize);
-                        } else if (pattern.type === "vertical") {
+                        } else if (dragPattern.type === "vertical") {
                             ctx.fillRect(j * stripeSize, 0, stripeSize, size);
-                        } else if (pattern.type === "diagonal") {
+                        } else if (dragPattern.type === "diagonal") {
                             // For diagonal, create the stripes at 45 degrees
                             ctx.save();
                             ctx.translate(size / 2, size / 2);
@@ -1010,11 +1020,11 @@ function renderQuilt(): void {
                             ctx.restore();
                         }
                     }
-                } else if (pattern.type === "checkerboard") {
+                } else if (dragPattern.type === "checkerboard") {
                     const checkSize = size / 4;
                     for (let row = 0; row < 4; row++) {
                         for (let col = 0; col < 4; col++) {
-                            ctx.fillStyle = pattern.colors[(row + col) % 2];
+                            ctx.fillStyle = dragPattern.colors[(row + col) % 2];
                             ctx.fillRect(
                                 col * checkSize,
                                 row * checkSize,
@@ -1023,12 +1033,12 @@ function renderQuilt(): void {
                             );
                         }
                     }
-                } else if (pattern.type === "quartersquare") {
+                } else if (dragPattern.type === "quartersquare") {
                     const cx = size / 2;
                     const cy = size / 2;
 
                     // Top triangle
-                    ctx.fillStyle = pattern.colors[0];
+                    ctx.fillStyle = dragPattern.colors[0];
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.lineTo(size, 0);
@@ -1037,7 +1047,7 @@ function renderQuilt(): void {
                     ctx.fill();
 
                     // Right triangle
-                    ctx.fillStyle = pattern.colors[1];
+                    ctx.fillStyle = dragPattern.colors[1];
                     ctx.beginPath();
                     ctx.moveTo(size, 0);
                     ctx.lineTo(size, size);
@@ -1046,7 +1056,7 @@ function renderQuilt(): void {
                     ctx.fill();
 
                     // Bottom triangle
-                    ctx.fillStyle = pattern.colors[2];
+                    ctx.fillStyle = dragPattern.colors[2];
                     ctx.beginPath();
                     ctx.moveTo(size, size);
                     ctx.lineTo(0, size);
@@ -1055,11 +1065,155 @@ function renderQuilt(): void {
                     ctx.fill();
 
                     // Left triangle
-                    ctx.fillStyle = pattern.colors[3];
+                    ctx.fillStyle = dragPattern.colors[3];
                     ctx.beginPath();
                     ctx.moveTo(0, size);
                     ctx.lineTo(0, 0);
                     ctx.lineTo(cx, cy);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (dragPattern.type === "ninepatch") {
+                    // Draw nine-patch pattern (3x3 grid)
+                    const patchSize = size / 3;
+                    for (let row = 0; row < 3; row++) {
+                        for (let col = 0; col < 3; col++) {
+                            const colorIndex = (row * 3 + col) % dragPattern.colors.length;
+                            ctx.fillStyle = dragPattern.colors[colorIndex];
+                            ctx.fillRect(col * patchSize, row * patchSize, patchSize, patchSize);
+                        }
+                    }
+                } else if (dragPattern.type === "pinwheel") {
+                    // Draw pinwheel pattern (8 triangles all pointing to center, alternating colors)
+                    const cx = size / 2;
+                    const cy = size / 2;
+
+                    // Triangle 1: center to top-left corner and top edge midpoint
+                    ctx.fillStyle = dragPattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(cx, 0);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 2: center to top edge midpoint and top-right corner
+                    ctx.fillStyle = dragPattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx, 0);
+                    ctx.lineTo(size, 0);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 3: center to top-right corner and right edge midpoint
+                    ctx.fillStyle = dragPattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(size, 0);
+                    ctx.lineTo(size, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 4: center to right edge midpoint and bottom-right corner
+                    ctx.fillStyle = dragPattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(size, cy);
+                    ctx.lineTo(size, size);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 5: center to bottom-right corner and bottom edge midpoint
+                    ctx.fillStyle = dragPattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(size, size);
+                    ctx.lineTo(cx, size);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 6: center to bottom edge midpoint and bottom-left corner
+                    ctx.fillStyle = dragPattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx, size);
+                    ctx.lineTo(0, size);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 7: center to bottom-left corner and left edge midpoint
+                    ctx.fillStyle = dragPattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(0, size);
+                    ctx.lineTo(0, cy);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Triangle 8: center to left edge midpoint and top-left corner
+                    ctx.fillStyle = dragPattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(0, cy);
+                    ctx.lineTo(0, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (dragPattern.type === "flyinggeese") {
+                    // Draw flying geese pattern (left goose + right goose both pointing right, 4 background triangles)
+                    const halfX = size / 2;
+                    const halfY = size / 2;
+
+                    // Left goose triangle (pointing right to middle)
+                    ctx.fillStyle = dragPattern.colors[0];
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, size);
+                    ctx.lineTo(halfX, halfY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Right goose triangle (pointing right from middle)
+                    ctx.fillStyle = dragPattern.colors[1];
+                    ctx.beginPath();
+                    ctx.moveTo(halfX, 0);
+                    ctx.lineTo(halfX, size);
+                    ctx.lineTo(size, halfY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Top-left background triangle
+                    ctx.fillStyle = dragPattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(halfX, 0);
+                    ctx.lineTo(halfX, halfY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Top-right background triangle
+                    ctx.fillStyle = dragPattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(halfX, 0);
+                    ctx.lineTo(size, 0);
+                    ctx.lineTo(size, halfY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Bottom-left background triangle
+                    ctx.fillStyle = dragPattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(0, size);
+                    ctx.lineTo(halfX, size);
+                    ctx.lineTo(halfX, halfY);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Bottom-right background triangle
+                    ctx.fillStyle = dragPattern.colors[2];
+                    ctx.beginPath();
+                    ctx.moveTo(halfX, size);
+                    ctx.lineTo(size, size);
+                    ctx.lineTo(size, halfY);
                     ctx.closePath();
                     ctx.fill();
                 }
@@ -1109,7 +1263,7 @@ function renderQuilt(): void {
             e.preventDefault();
             square.classList.remove("drag-over");
 
-            const targetPatternIndex = isPortrait ? i : landscapeToPortrait(i);
+            const targetPatternIndex = patternIndex;
 
             // Check if dropping from library
             if (draggedLibraryPattern !== null) {
@@ -1118,11 +1272,9 @@ function renderQuilt(): void {
                     JSON.stringify(library[draggedLibraryPattern])
                 );
                 applyPatternToElement(square, patterns[targetPatternIndex]);
-            } else if (draggedIndex !== null && draggedIndex !== i) {
+            } else if (draggedIndex !== null && draggedIndex !== patternIndex) {
                 // Copy pattern from another quilt square
-                const sourcePatternIndex = isPortrait
-                    ? draggedIndex
-                    : landscapeToPortrait(draggedIndex);
+                const sourcePatternIndex = draggedIndex;
                 patterns[targetPatternIndex] = JSON.parse(
                     JSON.stringify(patterns[sourcePatternIndex])
                 );
@@ -1148,7 +1300,7 @@ function renderQuilt(): void {
             lastTapIndex = i;
 
             // Start drag immediately (double-tap is detected above)
-            draggedIndex = i;
+            draggedIndex = patternIndex;
             square.classList.add("dragging");
             createDragGhost(square, e.touches[0]);
             e.preventDefault();
@@ -1207,33 +1359,30 @@ function renderQuilt(): void {
 
                 if (
                     draggedIndex !== null &&
-                    targetSquareIndex !== -1 &&
-                    draggedIndex !== targetSquareIndex
+                    targetSquareIndex !== -1
                 ) {
-                    const targetPatternIndex = isPortrait
-                        ? targetSquareIndex
-                        : landscapeToPortrait(targetSquareIndex);
+                    const targetPatternIndex = domIndexToPatternIndex(targetSquareIndex);
 
-                    // Check if dropping from library
-                    if (draggedLibraryPattern !== null) {
-                        patterns[targetPatternIndex] = JSON.parse(
-                            JSON.stringify(library[draggedLibraryPattern])
-                        );
-                    } else {
-                        // Copy pattern from another quilt square
-                        const sourcePatternIndex = isPortrait
-                            ? draggedIndex
-                            : landscapeToPortrait(draggedIndex);
-                        patterns[targetPatternIndex] = JSON.parse(
-                            JSON.stringify(patterns[sourcePatternIndex])
+                    if (draggedIndex !== targetPatternIndex) {
+                        // Check if dropping from library
+                        if (draggedLibraryPattern !== null) {
+                            patterns[targetPatternIndex] = JSON.parse(
+                                JSON.stringify(library[draggedLibraryPattern])
+                            );
+                        } else {
+                            // Copy pattern from another quilt square
+                            const sourcePatternIndex = draggedIndex;
+                            patterns[targetPatternIndex] = JSON.parse(
+                                JSON.stringify(patterns[sourcePatternIndex])
+                            );
+                        }
+
+                        // Update visual
+                        applyPatternToElement(
+                            elementBelow as HTMLElement,
+                            patterns[targetPatternIndex]
                         );
                     }
-
-                    // Update visual
-                    applyPatternToElement(
-                        elementBelow as HTMLElement,
-                        patterns[targetPatternIndex]
-                    );
                 }
             }
 
