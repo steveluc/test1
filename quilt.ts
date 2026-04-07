@@ -41,6 +41,7 @@ let gridConfig: GridConfig = {
     rows: 6,
     cols: 8,
 };
+let longPressTimer: number | null = null;
 
 // Create drag ghost element
 function createDragGhost(sourceElement: HTMLElement, touch: Touch): void {
@@ -913,6 +914,101 @@ function updateOrientation(): void {
     }
 }
 
+// Stamp pattern across quilt in various modes
+function stampPattern(sourcePatternIndex: number, mode: string): void {
+    const pattern = patterns[sourcePatternIndex];
+    const totalPatterns = gridConfig.rows * gridConfig.cols;
+
+    // Find the source position in the canonical grid
+    const sourceRow = Math.floor(sourcePatternIndex / gridConfig.cols);
+    const sourceCol = sourcePatternIndex % gridConfig.cols;
+
+    for (let idx = 0; idx < totalPatterns; idx++) {
+        if (idx === sourcePatternIndex) continue;
+
+        const r = Math.floor(idx / gridConfig.cols);
+        const c = idx % gridConfig.cols;
+
+        let shouldStamp = false;
+
+        if (mode === "everyother") {
+            // Checkerboard: same parity as the source square
+            const sourceParity = (sourceRow + sourceCol) % 2;
+            shouldStamp = (r + c) % 2 === sourceParity;
+        } else if (mode === "row") {
+            shouldStamp = r === sourceRow;
+        } else if (mode === "col") {
+            shouldStamp = c === sourceCol;
+        } else if (mode === "diag-down") {
+            // Diagonal going down-right (same row-col offset)
+            shouldStamp = (r - c) === (sourceRow - sourceCol);
+        } else if (mode === "diag-up") {
+            // Diagonal going up-right (same row+col sum)
+            shouldStamp = (r + c) === (sourceRow + sourceCol);
+        }
+
+        if (shouldStamp) {
+            patterns[idx] = JSON.parse(JSON.stringify(pattern));
+        }
+    }
+
+    renderQuilt();
+}
+
+// Show context menu for stamp operations
+function showStampMenu(x: number, y: number, patternIndex: number): void {
+    // Remove any existing menu
+    hideStampMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "stamp-menu";
+    menu.id = "stampMenu";
+
+    const options = [
+        { label: "Every other square", mode: "everyother" },
+        { label: "Fill row \u2194", mode: "row" },
+        { label: "Fill column \u2195", mode: "col" },
+        { label: "Diagonal \u2198", mode: "diag-down" },
+        { label: "Diagonal \u2197", mode: "diag-up" },
+    ];
+
+    options.forEach((opt) => {
+        const item = document.createElement("div");
+        item.className = "stamp-menu-item";
+        item.textContent = opt.label;
+        item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            stampPattern(patternIndex, opt.mode);
+            hideStampMenu();
+        });
+        menu.appendChild(item);
+    });
+
+    // Position menu, keeping it on screen
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    document.body.appendChild(menu);
+
+    // Adjust if off-screen
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = `${x - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = `${y - rect.height}px`;
+    }
+
+    // Close on click outside
+    setTimeout(() => {
+        document.addEventListener("click", hideStampMenu, { once: true });
+    }, 0);
+}
+
+function hideStampMenu(): void {
+    const existing = document.getElementById("stampMenu");
+    if (existing) existing.remove();
+}
+
 // Apply pattern style to element
 function applyPatternToElement(element: HTMLElement, pattern: Pattern): void {
     const patternStyle = getPatternStyle(pattern);
@@ -1247,6 +1343,12 @@ function renderQuilt(): void {
             rotatePattern(patternIndex);
         });
 
+        // Right-click to show stamp menu
+        square.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            showStampMenu(e.clientX, e.clientY, patternIndex);
+        });
+
         // Drag over - allow dropping
         square.addEventListener("dragover", (e) => {
             e.preventDefault();
@@ -1299,6 +1401,17 @@ function renderQuilt(): void {
             lastTapTime = currentTime;
             lastTapIndex = i;
 
+            // Start long-press timer for stamp menu
+            const touch = e.touches[0];
+            longPressTimer = window.setTimeout(() => {
+                longPressTimer = null;
+                // Cancel drag
+                square.classList.remove("dragging");
+                removeDragGhost();
+                draggedIndex = null;
+                showStampMenu(touch.clientX, touch.clientY, patternIndex);
+            }, 500);
+
             // Start drag immediately (double-tap is detected above)
             draggedIndex = patternIndex;
             square.classList.add("dragging");
@@ -1307,6 +1420,11 @@ function renderQuilt(): void {
         });
 
         square.addEventListener("touchmove", (e) => {
+            // Cancel long-press on move
+            if (longPressTimer !== null) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
             e.preventDefault();
             const touch = e.touches[0];
             updateDragGhost(touch);
@@ -1332,6 +1450,10 @@ function renderQuilt(): void {
         });
 
         square.addEventListener("touchend", (e) => {
+            if (longPressTimer !== null) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
             e.preventDefault();
             square.classList.remove("dragging");
             removeDragGhost();
@@ -1487,6 +1609,9 @@ function applyGridSettings(): void {
 (window as any).setColumns = setColumns;
 (window as any).setRows = setRows;
 (window as any).applyGridSettings = applyGridSettings;
+(window as any).stampPattern = stampPattern;
+(window as any).showStampMenu = showStampMenu;
+(window as any).hideStampMenu = hideStampMenu;
 
 // Initial render
 initializeColors();
