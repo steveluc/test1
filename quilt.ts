@@ -931,7 +931,9 @@ function stampPattern(sourcePatternIndex: number, mode: string): void {
 
         let shouldStamp = false;
 
-        if (mode === "everyother") {
+        if (mode === "fill") {
+            shouldStamp = true;
+        } else if (mode === "everyother") {
             // Checkerboard: same parity as the source square
             const sourceParity = (sourceRow + sourceCol) % 2;
             shouldStamp = (r + c) % 2 === sourceParity;
@@ -964,12 +966,19 @@ function showStampMenu(x: number, y: number, patternIndex: number): void {
     menu.className = "stamp-menu";
     menu.id = "stampMenu";
 
+    // When rotated, visual row = canonical col and vice versa,
+    // and diagonal directions swap
+    const isPortrait = window.innerHeight > window.innerWidth;
+    const configIsWiderThanTall = gridConfig.cols > gridConfig.rows;
+    const rotated = (isPortrait && configIsWiderThanTall) || (!isPortrait && !configIsWiderThanTall);
+
     const options = [
+        { label: "Fill all", mode: "fill" },
         { label: "Every other square", mode: "everyother" },
-        { label: "Fill row \u2194", mode: "row" },
-        { label: "Fill column \u2195", mode: "col" },
-        { label: "Diagonal \u2198", mode: "diag-down" },
-        { label: "Diagonal \u2197", mode: "diag-up" },
+        { label: rotated ? "Fill row \u2194" : "Fill row \u2194", mode: rotated ? "col" : "row" },
+        { label: rotated ? "Fill column \u2195" : "Fill column \u2195", mode: rotated ? "row" : "col" },
+        { label: rotated ? "Diagonal \u2198" : "Diagonal \u2198", mode: rotated ? "diag-up" : "diag-down" },
+        { label: rotated ? "Diagonal \u2197" : "Diagonal \u2197", mode: rotated ? "diag-down" : "diag-up" },
     ];
 
     options.forEach((opt) => {
